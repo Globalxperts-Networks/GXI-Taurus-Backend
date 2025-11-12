@@ -101,32 +101,6 @@ class add_job(TimeStampedModel):
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
-    # def clean(self):
-    #     errors = {}
-    #     if self.manager and getattr(self.manager, 'role', None) != UserProfile.ROLE_MANAGER:
-    #         errors["manager"] = "Selected user is not a Manager."
-
-    #     if self.hiring_manager:
-    #         if getattr(self.hiring_manager, 'role', None) != UserProfile.Hiring_Manager:
-    #             errors["hiring_manager"] = "Selected user is not a HiringManager."
-    #         if self.manager and getattr(self.hiring_manager, 'created_by_manager_id', None) != self.manager_id:
-    #             errors["hiring_manager"] = "HiringManager must be created by the selected Manager."
-
-    #     # ⬇️ Only check M2M after the instance has a PK
-    #     if self.pk:
-    #         if self.hr_team_members.exists():
-    #             bad_roles = self.hr_team_members.exclude(role=UserProfile.ROLE_HR)
-    #             if bad_roles.exists():
-    #                 errors["hr_team_members"] = "All selected users must have HR role."
-    #             if self.manager:
-    #                 wrong_mgr = self.hr_team_members.exclude(created_by_manager_id=self.manager_id)
-    #                 if wrong_mgr.exists():
-    #                     errors["hr_team_members"] = "All HRs must be created by the selected Manager."
-
-    #     if errors:
-    #         raise ValidationError(errors)
-
-
     def save(self, *args, **kwargs):
         if not self.job_id:
             last_job = add_job.objects.all().order_by('-id').first()
