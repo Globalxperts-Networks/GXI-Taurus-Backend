@@ -19,19 +19,9 @@ GOOGLE_CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, "credentials_2.json")
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-# MUST match your OAuth client "Authorized redirect URIs" EXACTLY.
-# If you prefer https, ensure your dev server actually serves HTTPS.
 REDIRECT_URI = "http://127.0.0.1:8000/api/form_data/callback/"
 
-# -------------------------------
-# Views
-# -------------------------------
-
 class GoogleAuthInit(APIView):
-    """
-    Step 1: Get the Google OAuth consent URL.
-    Open the returned 'auth_url' in a browser and grant access.
-    """
     authentication_classes = []
     permission_classes = []
 
@@ -41,7 +31,6 @@ class GoogleAuthInit(APIView):
             scopes=SCOPES,
             redirect_uri=REDIRECT_URI
         )
-        # offline + prompt=consent ensures we get a refresh_token
         auth_url, _ = flow.authorization_url(
             prompt="consent",
             access_type="offline",
@@ -51,10 +40,6 @@ class GoogleAuthInit(APIView):
 
 
 class GoogleAuthCallback(APIView):
-    """
-    Step 2: OAuth redirect target. Saves token to TOKEN_PATH.
-    You should see has_refresh_token = true on first successful grant.
-    """
     authentication_classes = []
     permission_classes = []
 
@@ -82,9 +67,6 @@ class GoogleAuthCallback(APIView):
 
 
 class GoogleTokenStatus(APIView):
-    """
-    (Optional) Quick diagnostic endpoint to check token presence/health.
-    """
     authentication_classes = []
     permission_classes = []
 
@@ -105,23 +87,14 @@ class GoogleTokenStatus(APIView):
 
 
 class CreateMeetView(APIView):
-    """
-    Step 3: Create a Calendar event with a Google Meet link.
-    POST the JSON body shown below. Returns meet_link + event_id.
-    """
     def post(self, request):
         try:
-            # 1) Ensure we have a token
             if not os.path.exists(TOKEN_PATH):
                 return Response(
                     {"error": "User not authorized with Google (no token.json)", "looking_for": TOKEN_PATH},
                     status=401
                 )
-
-            # 2) Load credentials
             creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
-
-            # 3) Refresh if expired and refresh_token present
             if not creds.valid and creds.refresh_token:
                 try:
                     creds.refresh(Request())
@@ -130,7 +103,6 @@ class CreateMeetView(APIView):
                 except Exception as e:
                     return Response({"error": "Failed to refresh token", "details": str(e)}, status=401)
 
-            # If still invalid, we can't proceed
             if not creds.valid:
                 return Response(
                     {"error": "Invalid/expired credentials and no refresh_token", "token_path": TOKEN_PATH},
@@ -138,8 +110,6 @@ class CreateMeetView(APIView):
                 )
 
             service = build("calendar", "v3", credentials=creds)
-
-            # 4) Build event body
             event = {
                 "summary": request.data.get("summary", "Team Meeting"),
                 "description": request.data.get("description", "Google Meet discussion"),
@@ -159,15 +129,12 @@ class CreateMeetView(APIView):
                 },
                 "attendees": [{"email": email} for email in (request.data.get("attendees") or [])],
             }
-
-            # 5) Create event (conferenceDataVersion=1 required for Meet link)
             event = service.events().insert(
                 calendarId="primary",
                 body=event,
                 conferenceDataVersion=1
             ).execute()
 
-            # 6) Extract Meet URL
             meet_link = event.get("hangoutLink")
             if not meet_link:
                 conf = event.get("conferenceData", {}) or {}

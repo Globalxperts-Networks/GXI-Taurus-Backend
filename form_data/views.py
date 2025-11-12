@@ -8,7 +8,8 @@ from django.core.mail import send_mail
 from .models import FormData
 from .serializers import FormDataSerializer
 import requests
-
+from functools import reduce
+from operator import or_
 
 class FormDataAPIView(APIView):
 
@@ -66,14 +67,33 @@ class FormDataAPIView(APIView):
             form_name = request.query_params.get('form_name', None)
             sort_by = request.query_params.get('sort_by', '-submitted_at')
 
+            # NEW: role_type filters
+            role_type_param = request.query_params.get('role_type')  # e.g., "SDET" or "Software...,SDET"
+            role_type_exact = request.query_params.get('role_type_exact', 'false').lower() in ('1', 'true', 'yes')
+
             forms = FormData.objects.all()
+
             if form_name:
                 forms = forms.filter(form_name__icontains=form_name)
+
+            # existing search across name + JSON text
             if search_query:
                 forms = forms.filter(
                     Q(form_name__icontains=search_query) |
                     Q(submission_data__icontains=search_query)
                 )
+
+            # NEW: Role_Type inside submission_data (top-level key)
+            # Works on PostgreSQL natively; on SQLite it will still work for icontains via JSONField text casting.
+            if role_type_param:
+                role_types = [rt.strip() for rt in role_type_param.split(',') if rt.strip()]
+                if role_types:
+                    if role_type_exact:
+                        conds = [Q(submission_data__Role_Type__iexact=rt) for rt in role_types]
+                    else:
+                        conds = [Q(submission_data__Role_Type__icontains=rt) for rt in role_types]
+                    # OR all role conditions together
+                    forms = forms.filter(reduce(or_, conds))
 
             valid_sort_fields = ['form_name', 'submitted_at']
             if sort_by.lstrip('-') not in valid_sort_fields:
