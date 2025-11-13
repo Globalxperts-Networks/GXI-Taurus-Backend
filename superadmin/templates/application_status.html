@@ -1,53 +1,339 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .container {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        .status {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2d6cdf;
-        }
-        .footer {
-            margin-top: 25px;
-            font-size: 14px;
-            color: #666;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Application Status — GXI Networks</title>
+  <style>
+    :root{
+      --bg:#0f1724; /* dark fallback */
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent-1: linear-gradient(135deg,#4f46e5,#06b6d4);
+      --radius:14px;
+      --glass: rgba(255,255,255,0.06);
+      --container-padding:22px;
+      --shadow: 0 6px 30px rgba(12, 20, 40, 0.12);
+      font-synthesis: none;
+    }
+
+    /* Reset + base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #0b1220 0%, #071021 100%);
+      color: #0b1220;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:32px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+    }
+
+    /* Card */
+    .card{
+      width:100%;
+      max-width:760px;
+      background: linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+      border-radius:var(--radius);
+      padding:var(--container-padding);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(15,23,42,0.04);
+      overflow:hidden;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 300px;
+      gap:20px;
+      align-items:start;
+    }
+
+    @media (max-width:720px){
+      .grid{grid-template-columns:1fr; padding:0}
+    }
+
+    header.card-header{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:8px;
+    }
+    .logo{
+      width:56px;
+      height:56px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      background:var(--accent-1);
+      color:white;
+      font-weight:700;
+      font-size:18px;
+      box-shadow: 0 6px 20px rgba(99,102,241,0.15);
+    }
+    .title{
+      line-height:1;
+    }
+    .title h1{
+      margin:0;
+      font-size:18px;
+      color:#0f1724;
+    }
+    .title p{
+      margin:2px 0 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .main-content p{margin:0 0 12px 0; color:#0f1724}
+    .greeting{font-size:16px; font-weight:600; color:#0f1724; margin-bottom:4px}
+
+    /* Status area */
+    .status-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin:14px 0;
+      flex-wrap:wrap;
+    }
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:14px;
+      color:white;
+      background:linear-gradient(90deg,#6ee7b7,#10b981);
+      box-shadow: 0 4px 18px rgba(16,185,129,0.18);
+      transition:transform .18s ease, box-shadow .18s ease;
+      transform-origin:center;
+    }
+    .status-badge:hover{transform:translateY(-3px); box-shadow:0 10px 30px rgba(16,185,129,0.18)}
+    .status-badge svg{width:18px;height:18px; flex:0 0 18px}
+
+    .meta{
+      color:var(--muted);
+      font-size:13px;
+      background: #f8fafc;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid rgba(15,23,42,0.03);
+    }
+
+    /* Right column summary */
+    .summary{
+      background: linear-gradient(180deg,#f8fafc,#ffffff);
+      border-radius:10px;
+      padding:14px;
+      border:1px solid rgba(15,23,42,0.04);
+      min-height:120px;
+    }
+    .summary h3{margin:0 0 8px 0; font-size:14px}
+    .summary .row{display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px 0}
+    .summary .muted{color:var(--muted); font-size:13px}
+    .summary .value{font-weight:700; color:#0f1724}
+
+    /* CTA row */
+    .cta{
+      display:flex;
+      gap:10px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
+      box-shadow:none;
+      transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      text-decoration:none;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn-ghost{background:transparent; color:#0f1724; border:1px solid rgba(15,23,42,0.06)}
+    .btn-primary{background:linear-gradient(90deg,#4f46e5,#06b6d4); color:white; box-shadow: 0 8px 30px rgba(79,70,229,0.12)}
+    .btn-secondary{background:#0f1724;color:white}
+
+    /* timeline / details */
+    .details{
+      margin-top:10px;
+      padding-top:6px;
+      border-top:1px dashed rgba(15,23,42,0.04);
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .nice{color:#0f1724}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:600;font-size:13px}
+
+    /* Print friendly */
+    @media print{
+      body{background:white}
+      .card{box-shadow:none; border: none}
+      .btn, .cta{display:none}
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <p>Dear {{ candidate_name }},</p>
+  <article class="card" role="article" aria-labelledby="email-title">
+    <div class="grid">
+      <section class="main" aria-labelledby="email-title">
+        <header class="card-header">
+          <div class="logo" aria-hidden="true">GXI</div>
+          <div class="title">
+            <h1 id="email-title">Application update — GXI Networks</h1>
+            <p class="muted">Automated notification — keep this for your records</p>
+          </div>
+        </header>
 
-    <p>We wanted to inform you that your application status has been updated.</p>
+        <div class="main-content" role="region" aria-label="Application content">
+          <p class="greeting">Dear <span class="nice">{{ candidate_name }}</span>,</p>
 
-    <p class="status">➡️ Current Status: {{ current_status }}</p>
+          <p>We wanted to inform you that the status of your application has changed. Below are the latest details.</p>
 
-    {% if phase %}
-        <p>➡️ Interview Phase: {{ phase }}</p>
-    {% endif %}
+          <div class="status-row" aria-live="polite">
+            <div id="statusBadge" class="status-badge" role="status" aria-atomic="true">
+              <!-- small status icon -->
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span id="statusText">➡️ Current Status: <strong>{{ current_status }}</strong></span>
+            </div>
 
-    {% if interview_date and interview_time %}
-        <p>📅 Interview Scheduled on: {{ interview_date }} at {{ interview_time }}</p>
-    {% endif %}
+            <div class="meta" id="metaArea">
+              {% if phase %}
+                <div><strong>Interview Phase:</strong> {{ phase }}</div>
+              {% endif %}
+              {% if interview_date and interview_time %}
+                <div><strong>Interview:</strong> {{ interview_date }} at {{ interview_time }}</div>
+              {% endif %}
+              {% if joining_date %}
+                <div><strong>Joining Date:</strong> {{ joining_date }}</div>
+              {% endif %}
+            </div>
+          </div>
 
-    {% if joining_date %}
-        <p>🎉 Your Joining Date: {{ joining_date }}</p>
-    {% endif %}
+          <p class="muted">If you have any questions, reply to this email or contact our HR team directly.</p>
 
-    <p class="footer">
-        Thank you for your time and interest in joining our team.<br>
-        Best regards,<br>
-        <strong>GXI Networks HR Team</strong>
-    </p>
-</div>
+          <div class="details" id="extraDetails">
+            <!-- optional additional notes -->
+            {% if notes %}
+              <p><strong>Notes:</strong> {{ notes }}</p>
+            {% endif %}
+            <p class="muted" style="margin-top:8px">This message was generated automatically. For sensitive dates or changes, please consult the recruitment portal.</p>
+          </div>
 
+          <div class="cta" role="group" aria-label="Actions">
+            <a href="{{ portal_url or '#' }}" class="btn btn-primary" id="viewPortalBtn" role="button" title="Open candidate portal">
+              <!-- portal icon -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              View Portal
+            </a>
+
+            {% if interview_date and interview_time %}
+              <a href="{{ reschedule_url or '#' }}" class="btn btn-ghost" id="rescheduleBtn">Reschedule</a>
+            {% endif %}
+
+            <a href="mailto:hr@gxinetworks.example" class="btn btn-ghost">Contact HR</a>
+          </div>
+
+        </div>
+      </section>
+
+      <aside class="summary" aria-label="Summary">
+        <h3>Quick summary</h3>
+
+        <div class="row"><div class="muted">Status</div><div class="value" id="summaryStatus">{{ current_status }}</div></div>
+
+        {% if interview_date %}
+          <div class="row"><div class="muted">Interview</div><div class="value">{{ interview_date }}<div class="muted" style="font-size:12px">{{ interview_time or '' }}</div></div></div>
+        {% endif %}
+
+        {% if joining_date %}
+          <div class="row"><div class="muted">Joining</div><div class="value">{{ joining_date }}</div></div>
+        {% endif %}
+
+        <div style="margin-top:12px">
+          <div class="muted" style="font-size:13px">Reference</div>
+          <div class="pill" style="margin-top:8px">{{ application_id or 'N/A' }}</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <small class="muted">Received on {{ update_time or '' }}</small>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="margin-top:18px; border-top:1px solid rgba(15,23,42,0.03); padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div class="muted" style="font-size:13px">Best regards, <strong>GXI Networks HR Team</strong></div>
+      <div class="muted" style="font-size:13px">Need help? <a href="mailto:hr@gxinetworks.example">hr@gxinetworks.example</a></div>
+    </footer>
+  </article>
+
+  <script>
+    // Lightweight client-side enhancement:
+    // - color the status badge according to the rendered status text
+    // - accessible aria updates
+    (function(){
+      const badge = document.getElementById('statusBadge');
+      const statusTextEl = document.getElementById('summaryStatus') || document.getElementById('statusText');
+      // Get the status string from the rendered template.
+      const statusStr = (document.getElementById('statusText')?.textContent || '').replace('➡️ Current Status:','').trim() || '{{ current_status }}';
+      const s = statusStr.toLowerCase();
+
+      // mapping: extend as needed
+      const map = [
+        {test: t => /offer|joined|hired|selected/.test(t), style: {bg:'linear-gradient(90deg,#10b981,#06b6d4)', shadow: '0 8px 30px rgba(6,182,212,0.12)'}},
+        {test: t => /interview|scheduled|rescheduled|onsite/.test(t), style: {bg:'linear-gradient(90deg,#f59e0b,#f97316)', shadow: '0 8px 30px rgba(249,115,22,0.12)'}},
+        {test: t => /rejected|declined|not selected/.test(t), style: {bg:'linear-gradient(90deg,#ef4444,#f43f5e)', shadow: '0 8px 30px rgba(244,63,94,0.12)'}},
+        {test: t => /in progress|under review|shortlisted|screening|processing/.test(t), style: {bg:'linear-gradient(90deg,#4f46e5,#06b6d4)', shadow: '0 8px 30px rgba(79,70,229,0.12)'}},
+      ];
+
+      let applied = map.find(m => m.test(s));
+      if(!applied){
+        // default: neutral
+        applied = {style:{bg:'linear-gradient(90deg,#9ca3af,#94a3b8)', shadow:'0 8px 30px rgba(99,102,241,0.06)'}};
+      }
+
+      // Apply styles
+      badge.style.background = applied.style.bg;
+      badge.style.boxShadow = applied.style.shadow;
+
+      // ensure ARIA contains the raw status too
+      badge.setAttribute('aria-label', 'Application status: ' + (statusStr || '{{ current_status }}'));
+
+      // Also update the small status in summary (if exists)
+      const summary = document.getElementById('summaryStatus');
+      if(summary) summary.textContent = statusStr || summary.textContent;
+
+      // small progressive enhancement: show/hide reschedule CTA if no interview date
+      try{
+        const resBtn = document.getElementById('rescheduleBtn');
+        // if the template omitted the button via {% if %} there will be no element — safety check only
+        if(resBtn){
+          if(!('{{ interview_date }}'.trim())) {
+            resBtn.style.display = 'none';
+          }
+        }
+      }catch(e){}
+    })();
+  </script>
 </body>
 </html>
