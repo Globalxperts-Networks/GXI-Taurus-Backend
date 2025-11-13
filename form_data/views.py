@@ -1,3 +1,4 @@
+from unittest import result
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -354,52 +355,36 @@ class ScheduleInterviewAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def send_whatsapp_message(phone, name_value):
-    
-    url = f"https://live-mt-server.wati.io/{settings.TENANT_ID}/api/v1/sendTemplateMessage?whatsappNumber={phone}"
-
-    payload = {
-        "parameters": [
-            {"name": "name", "value": name_value}
-        ],
-        "template_name": "otp_service",
-        "broadcast_name": "otp_service_101120251049"
-    }
-
-    headers = {
-        "Content-Type": "application/json-patch+json",
-        "Authorization": f"Bearer {settings.WATI_API_TOKEN}"
-    }
-
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        return {
-            "success": True,
-            "response": response.json()
-        }
-    except requests.exceptions.RequestException as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "details": getattr(e.response, "text", None)
-        }
-
 
 from django.shortcuts import get_object_or_404
+from .wati_service import WatiService
 
 class SendWhatsappMessageAPIView(APIView):
+
+    wati = WatiService()
+
     def post(self, request, form_id):
         form_data = get_object_or_404(FormData, id=form_id)
         serializer = FormDataSerializer(form_data)
+        submission = serializer.data["submission_data"]
 
-        phone = serializer.data["submission_data"]["Phone"]
-        # phone = "9161830835"  # for testing purpose
-        name = serializer.data["submission_data"].get("Name", "there")
+        phone = submission.get("Phone")
+        name = submission.get("Name", "there")
+        role_taurus = submission.get("Role_Type", "N/A")
+        status_taurus = submission.get("status", "N/A")
 
-        message_text = f"{name}, thanks for your submission!"
+        parameters = [
+            {"name": "name", "value": name},
+            {"name": "role_taurus", "value": role_taurus},
+            {"name": "status_taurus", "value": status_taurus},
+        ]
 
-        result = send_whatsapp_message(phone, message_text)
+        result = self.wati.send_template_message(
+            phone=phone,
+            template_name="candidate_application_status_taurus_testing_phase",
+            parameters=parameters,
+            broadcast_name="candidate_application_status_taurus_testing_phase_131120251013",
+        )
 
         if result["success"]:
             return Response(
@@ -417,11 +402,10 @@ class SendWhatsappMessageAPIView(APIView):
                     "error": result["error"],
                     "detail": result.get("details")
                 },
-                status=status.HTTP_502_BAD_GATEWAY
+                status=status.HTTP_200_OK
             )
-        
-    def get(self, request):
 
+    def get(self, request):
         phone = request.query_params.get("phone")
         if not phone:
             return Response(
@@ -429,8 +413,7 @@ class SendWhatsappMessageAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        result = self.get_whatsapp_messages(phone)
-
+        result = self.wati.get_messages(phone)
         if result["success"]:
             return Response(
                 {
@@ -449,23 +432,27 @@ class SendWhatsappMessageAPIView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-    def get_whatsapp_messages(self, phone):
-        url = (
-            f"https://live-mt-server.wati.io/{settings.TENANT_ID}/api/v1/getMessages/{phone}"
+
+class SendSessionMessageAPIView(APIView):
+
+    wati = WatiService()
+
+    def post(self, request, form_id):
+        form_data = get_object_or_404(FormData, id=form_id)
+        serializer = FormDataSerializer(form_data)
+        submission = serializer.data["submission_data"]
+
+        phone = submission.get("Phone")
+        message_text = request.data.get("message")
+
+        if not phone or not message_text:
+            return Response(
+                {"error": "Missing phone or message"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = self.wati.send_session_message(phone, message_text)
+        return Response(
+            result if result["success"] else {"message": "Failed to send", **result},
+            status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
-
-        headers = {
-            "Authorization": f"Bearer {settings.WATI_API_TOKEN}",
-            "Content-Type": "application/json",
-        }
-
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            return {"success": True, "response": response.json()}
-        except requests.exceptions.RequestException as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "details": getattr(e.response, "text", None),
-            }

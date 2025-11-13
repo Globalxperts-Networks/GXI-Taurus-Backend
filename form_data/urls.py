@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import FormDataAPIView  , ScheduleInterviewAPIView, SendWhatsappMessageAPIView
+from .views import FormDataAPIView  , ScheduleInterviewAPIView, SendWhatsappMessageAPIView, SendSessionMessageAPIView
 from .meetviews import GoogleAuthInit, GoogleAuthCallback, GoogleTokenStatus, CreateMeetView
 # from .cvviews import GenerateCVAPIView
 
@@ -13,5 +13,6 @@ urlpatterns = [
     path("callback/", GoogleAuthCallback.as_view()),
     path("token-status/", GoogleTokenStatus.as_view()),
     path("create/", CreateMeetView.as_view()),
+    path("send-session-message/<int:form_id>/", SendSessionMessageAPIView.as_view(), name="send_session_message"),
     # path("formdata/<int:pk>/generate-cv/", GenerateCVAPIView.as_view(), name="generate-cv"),
 ]
