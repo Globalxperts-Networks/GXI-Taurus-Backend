@@ -4,11 +4,6 @@ from django.conf import settings
 
 
 class WatiService:
-    """
-    Centralized service to interact with WATI APIs.
-    Supports sending template messages, session messages, and fetching chat history.
-    """
-
     BASE_URL = "https://live-mt-server.wati.io"
 
     def __init__(self):
