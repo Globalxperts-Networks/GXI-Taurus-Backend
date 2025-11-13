@@ -434,9 +434,7 @@ class SendWhatsappMessageAPIView(APIView):
 
 
 class SendSessionMessageAPIView(APIView):
-
     wati = WatiService()
-
     def post(self, request, form_id):
         form_data = get_object_or_404(FormData, id=form_id)
         serializer = FormDataSerializer(form_data)
