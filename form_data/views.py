@@ -11,39 +11,41 @@ from .serializers import FormDataSerializer
 import requests
 from functools import reduce
 from operator import or_
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 class FormDataAPIView(APIView):
-
-    # 🔹 Helper function to send candidate email
+    
     def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
-                          interview_date=None, interview_time=None, joining_date=None):
-        """Send email notification to candidate about their current application status."""
+                      interview_date=None, interview_time=None, joining_date=None):
+
         if not candidate_email:
-            return  # Skip if no email found
+            return
 
         subject = f"Update: Your Application Status - {current_status}"
-        message = f"Dear {candidate_name},\n\n"
-        message += f"We wanted to inform you that your application status has been updated.\n"
-        message += f"➡️ Current Status: {current_status}\n"
 
-        if phase:
-            message += f"➡️ Interview Phase: {phase}\n"
+        context = {
+            "candidate_name": candidate_name,
+            "current_status": current_status,
+            "phase": phase,
+            "interview_date": interview_date,
+            "interview_time": interview_time,
+            "joining_date": joining_date,
+        }
 
-        if interview_date and interview_time:
-            message += f"📅 Interview Scheduled on: {interview_date} at {interview_time}\n"
+        # Generate HTML email
+        html_message = render_to_string("application_status.html", context)
 
-        if joining_date:
-            message += f"🎉 Your Joining Date: {joining_date}\n"
-
-        message += "\nThank you for your time and interest in joining our team.\n"
-        message += "Best regards,\nGXI Networks HR Team"
+        # You can still send a simple text fallback (optional)
+        text_message = "Your application status has been updated."
 
         try:
             send_mail(
-                subject,
-                message,
-                '',  # Replace with DEFAULT_FROM_EMAIL
-                [candidate_email],
+                subject=subject,
+                message=text_message,      # plain text fallback
+                from_email='',              # DEFAULT_FROM_EMAIL or your email
+                recipient_list=[candidate_email],
+                html_message=html_message,  # Load HTML template
                 fail_silently=False,
             )
         except Exception as e:
@@ -132,10 +134,14 @@ class FormDataAPIView(APIView):
     # ================================
     # POST METHOD
     # ================================
+    
+    
+    
+
     def post(self, request):
         serializer = FormDataSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save() 
             return Response({
                 "status": "success",
                 "message": "Form data saved successfully",
