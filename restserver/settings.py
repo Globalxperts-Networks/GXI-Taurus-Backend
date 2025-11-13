@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'google_form_work',
     'form_data',
     'create_job',
+    'keka_history'
     #'tasks'
 ]
 
