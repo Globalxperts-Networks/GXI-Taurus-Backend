@@ -501,10 +501,6 @@ class ComposeMailAPIView(APIView):
             )
 
         submission = form_obj.submission_data
-
-        current_status = submission.get("status")
-        subject = f"Update: Your Application Status - {current_status}"
-
         candidate_email = submission.get("Email")
         role = submission.get("Role_Type", "Not Provided")
         current_status = submission.get("status", "Unknown")
@@ -517,7 +513,11 @@ class ComposeMailAPIView(APIView):
             phone=submission.get("Phone"),
             role=submission.get("Role_Type")
         )
-
+        submission["message"]=message
+        
+        # SAVE MESSAGE IN DATABASE
+        form_obj.submission_data = submission
+        form_obj.save()
         # Send email
         send_composed_email(
             to_email=candidate_email,
@@ -564,7 +564,11 @@ class ComposeMailAPIView(APIView):
             role=role,
             phone=submission.get("Phone")
         )
-
+        submission["message"]=message
+        
+        # SAVE MESSAGE IN DATABASE
+        form_obj.submission_data = submission
+        form_obj.save()
         # Send email
         send_composed_email(
             to_email=email,
