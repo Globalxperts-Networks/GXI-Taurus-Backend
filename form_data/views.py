@@ -462,7 +462,7 @@ class SendSessionMessageAPIView(APIView):
             status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
 
-def send_composed_email(to_email, cc_emails, subject, message):
+def send_composed_email(to_email, cc_emails, subject, message,attachment_file=None):
     """
     Send custom email with TO, CC, SUBJECT, and message body (NO TEMPLATE)
     """
@@ -477,6 +477,9 @@ def send_composed_email(to_email, cc_emails, subject, message):
         )
 
         email.content_subtype = "html"   # if message contains HTML tags
+        if attachment_file:
+            email.attach(attachment_file.name, attachment_file.read(), attachment_file.content_type)
+
         email.send()
         return True
 
@@ -488,6 +491,7 @@ class ComposeMailAPIView(APIView):
     def post(self, request, pk):
         cc_emails = request.data.get("cc_emails", "")
         message = request.data.get("message")
+        attachment_file = request.FILES.get("attachment") 
 
         cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
 
@@ -514,6 +518,10 @@ class ComposeMailAPIView(APIView):
             role=submission.get("Role_Type")
         )
         submission["message"]=message
+        submission["cc"]=cc_list
+        if attachment_file:
+            submission["attachment_name"] = attachment_file.name
+        
         
         # SAVE MESSAGE IN DATABASE
         form_obj.submission_data = submission
@@ -523,7 +531,8 @@ class ComposeMailAPIView(APIView):
             to_email=candidate_email,
             cc_emails=cc_list,
             subject=subject,
-            message=message
+            message=message,
+            attachment_file=attachment_file,
         )
 
         return Response({"message": "Email sent successfully!"})
@@ -533,6 +542,8 @@ class ComposeMailAPIView(APIView):
 
         cc_emails = request.data.get("cc_emails", "")
         message = request.data.get("message")
+        attachment_file = request.FILES.get("attachment") 
+
 
         # Build CC list
         cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
@@ -565,6 +576,10 @@ class ComposeMailAPIView(APIView):
             phone=submission.get("Phone")
         )
         submission["message"]=message
+        submission["cc"]=cc_list
+        if attachment_file:
+            submission["attachment_name"] = attachment_file.name
+        
         
         # SAVE MESSAGE IN DATABASE
         form_obj.submission_data = submission
@@ -574,7 +589,8 @@ class ComposeMailAPIView(APIView):
             to_email=email,
             cc_emails=cc_list,
             subject=subject,
-            message=message
+            message=message,
+            attachment_file=attachment_file,
         )
 
         return Response({"message": "Email updated successfully "})
