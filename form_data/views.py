@@ -11,8 +11,9 @@ from .serializers import FormDataSerializer
 import requests
 from functools import reduce
 from operator import or_
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.utils.html import strip_tags
 
 class FormDataAPIView(APIView):
     
@@ -460,3 +461,110 @@ class SendSessionMessageAPIView(APIView):
             result if result["success"] else {"message": "Failed to send", **result},
             status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
+
+def send_composed_email(to_email, cc_emails, subject, message):
+    try:
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email='',
+            to=[to_email],
+            cc=cc_emails,
+        )
+
+        email.content_subtype = "html"   # if message contains HTML tags
+        email.send()
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Email sending failed: {e}")
+        return False
+
+class ComposeMailAPIView(APIView):
+    def post(self, request, pk):
+        cc_emails = request.data.get("cc_emails", "")
+        message = request.data.get("message")
+
+        cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Record not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        submission = form_obj.submission_data
+
+        current_status = submission.get("status")
+        subject = f"Update: Your Application Status - {current_status}"
+
+        candidate_email = submission.get("Email")
+        role = submission.get("Role_Type", "Not Provided")
+        current_status = submission.get("status", "Unknown")
+
+        # Replace placeholders dynamically in message
+        subject = f"Role: {role} | Status: {current_status}"
+        message = message.format(
+            candidate_name=submission.get("Name"),
+            status=current_status,
+            phone=submission.get("Phone"),
+            role=submission.get("Role_Type")
+        )
+
+        # Send email
+        send_composed_email(
+            to_email=candidate_email,
+            cc_emails=cc_list,
+            subject=subject,
+            message=message
+        )
+
+        return Response({"message": "Email sent successfully!"})
+    
+    
+    def put(self, request, pk):
+
+        cc_emails = request.data.get("cc_emails", "")
+        message = request.data.get("message")
+
+        # Build CC list
+        cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+
+        # Fetch FormData record
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Record not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        submission = form_obj.submission_data
+
+        # Extract fields
+        role = submission.get("Role_Type", "")
+        current_status = submission.get("status", "")
+        name = submission.get("Name", "")
+        email = submission.get("Email", "")
+
+        # Dynamic subject
+        subject = f"Role: {role} | Status: {current_status}"
+
+        # Replace message placeholders
+        message = message.format(
+            candidate_name=name,
+            status=current_status,
+            role=role,
+            phone=submission.get("Phone")
+        )
+
+        # Send email
+        send_composed_email(
+            to_email=email,
+            cc_emails=cc_list,
+            subject=subject,
+            message=message
+        )
+
+        return Response({"message": "Email updated successfully "})
