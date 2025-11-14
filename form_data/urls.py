@@ -14,6 +14,7 @@ urlpatterns = [
     path("token-status/", GoogleTokenStatus.as_view()),
     path("create/", CreateMeetView.as_view()),
     path("send-session-message/<int:form_id>/", SendSessionMessageAPIView.as_view(), name="send_session_message"),
-    path("compose-email/", ComposeMailAPIView.as_view()),
+    path("compose-email/<int:pk>/", ComposeMailAPIView.as_view()),
+    path('update-email/<int:pk>/', ComposeMailAPIView.as_view(),)
     # path("formdata/<int:pk>/generate-cv/", GenerateCVAPIView.as_view(), name="generate-cv"),
 ]
