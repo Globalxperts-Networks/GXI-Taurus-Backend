@@ -11,8 +11,9 @@ from .serializers import FormDataSerializer
 import requests
 from functools import reduce
 from operator import or_
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.utils.html import strip_tags
 
 class FormDataAPIView(APIView):
     
@@ -460,3 +461,71 @@ class SendSessionMessageAPIView(APIView):
             result if result["success"] else {"message": "Failed to send", **result},
             status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
+
+def send_composed_email(to_email, cc_emails, subject, context,current_status):
+    """
+    Send custom email with TO, CC, SUBJECT, using fixed Django template.
+    """
+
+    html_message = render_to_string("compose_mail.html", context)
+    body_text = strip_tags(html_message)
+    subject = f"Update: Your Application Status - {current_status}"
+    
+    try:
+        email = EmailMessage(
+            subject=subject,
+            body=html_message,
+            from_email='',
+            to=[to_email],
+            cc=cc_emails,
+        )
+
+        email.content_subtype = "html"
+        email.send()
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Email sending failed: {e}")
+        return False
+
+    
+class ComposeMailAPIView(APIView):
+    def post(self, request):
+        form_id = request.data.get("form_id")
+        cc_emails = request.data.get("cc_emails", "")
+
+        cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+
+        try:
+            form_obj = FormData.objects.get(id=form_id)
+        except FormData.DoesNotExist:
+            return Response({"error": "FormData not found"}, status=404)
+
+        submission = form_obj.submission_data
+        current_status = submission.get("status")
+        subject = f"Update: Your Application Status - {current_status}"
+        
+
+        # Extract fields
+        context = {
+            "candidate_name": submission.get("Name"),
+            "candidate_email": submission.get("Email"),
+            "status": current_status,
+            "phone": submission.get("Phone"),
+            "role": submission.get("Role_Type"),
+            "data": submission,
+            "subject":subject
+        }
+
+        # Send email
+        send_composed_email(
+            to_email=submission.get("Email"),
+            cc_emails=cc_list,
+            context=context,
+            current_status=current_status,
+            subject=subject
+        )
+
+        return Response({"message": "Email sent successfully!"})
+
+
