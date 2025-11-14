@@ -14,6 +14,7 @@ from operator import or_
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.utils.html import strip_tags
+from django.core.files.storage import FileSystemStorage
 
 class FormDataAPIView(APIView):
     
@@ -517,11 +518,27 @@ class ComposeMailAPIView(APIView):
             phone=submission.get("Phone"),
             role=submission.get("Role_Type")
         )
-        submission["message"]=message
-        submission["cc"]=cc_list
+        saved_file_path = None
+
         if attachment_file:
-            submission["attachment_name"] = attachment_file.name
-        
+            fs = FileSystemStorage(location='media/email_attachments/')
+            saved_name = fs.save(attachment_file.name, attachment_file)
+            saved_file_path = f"email_attachments/{saved_name}"  # relative path to media
+
+        # =============================================
+        # ⭐ UPDATE submission_data JSON STRUCTURE
+        # =============================================
+        email_log = {
+            "message": message,
+            "cc": cc_list,
+            "attachments": [saved_file_path] if saved_file_path else []
+        }
+        if "email_message" not in submission or not isinstance(submission["email_message"], list):
+            submission["email_message"] = []
+
+        # Append new email message entry
+        submission["email_message"].append(email_log)
+
         
         # SAVE MESSAGE IN DATABASE
         form_obj.submission_data = submission
@@ -575,11 +592,23 @@ class ComposeMailAPIView(APIView):
             role=role,
             phone=submission.get("Phone")
         )
-        submission["message"]=message
-        submission["cc"]=cc_list
+        saved_file_path = None
+
         if attachment_file:
-            submission["attachment_name"] = attachment_file.name
-        
+            fs = FileSystemStorage(location='media/email_attachments/')
+            saved_name = fs.save(attachment_file.name, attachment_file)
+            saved_file_path = f"email_attachments/{saved_name}"  # relative path to media
+
+        email_log = {
+            "message": message,
+            "cc": cc_list,
+            "attachments": [saved_file_path] if saved_file_path else []
+        }
+        if "email_message" not in submission or not isinstance(submission["email_message"], list):
+            submission["email_message"] = []
+
+        # Append new email message entry
+        submission["email_message"].append(email_log)
         
         # SAVE MESSAGE IN DATABASE
         form_obj.submission_data = submission
