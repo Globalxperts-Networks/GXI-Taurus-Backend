@@ -623,3 +623,21 @@ class ComposeMailAPIView(APIView):
         )
 
         return Response({"message": "Email updated successfully "})
+    
+    def get(self, request, pk):
+
+        # Fetch FormData using pk
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"status": "error", "message": "Record not found"}, status=404)
+
+        submission = form_obj.submission_data
+
+        # Get email message list (or empty list if not exists)
+        email_logs = submission.get("email_message", [])
+
+        return Response({
+            "status": "success",
+            "email_messages": email_logs
+        })
