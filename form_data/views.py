@@ -568,3 +568,101 @@ class ComposeMailAPIView(APIView):
         )
 
         return Response({"message": "Email updated successfully "})
+    
+
+
+from .resume_parser import parse_resume
+
+class ResumeParseAPIView(APIView):
+    """
+    POST file=form-data 'resume' -> return parsed fields
+    """
+
+    def post(self, request):
+        f = request.FILES.get("resume")
+        if not f:
+            return Response({"error": "Please upload a file under the key 'resume'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        max_mb = 10
+        if getattr(f, "size", 0) > max_mb * 1024 * 1024:
+            return Response({"error": f"File too large. Max {max_mb} MB allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            result = parse_resume(f, f.name)
+            return Response({"success": True, "response": result}, status=status.HTTP_200_OK)
+        except Exception as exc:
+            return Response({"success": False, "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from .csv_reader import get_or_create_job_by_title
+from create_job.models import add_job
+from django.db import transaction
+from .csv_reader import read_uploaded_file
+
+BATCH_SIZE = 100
+
+
+class UploadCandidatesCSVAPIView(APIView):
+    def post(self, request):
+        csv_file = request.FILES.get("file")
+        if not csv_file:
+            return Response({"error": "Please upload a file under key 'file'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not (csv_file.name.lower().endswith(".csv") or csv_file.name.lower().endswith(".xlsx") or csv_file.name.lower().endswith(".xls")):
+            return Response({"error": "Only CSV, XLSX, and XLS files allowed."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            rows = read_uploaded_file(csv_file)
+        except Exception as e:
+            return Response({"error": f"Error reading CSV: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        created = 0
+        errors = []
+
+        job_cache = {}
+
+        batch_objects = []
+
+        for idx, row in enumerate(rows, start=2):
+            try:
+                job_title = (row.get("Job Title") or row.get("job title") or "").strip()
+
+                if job_title not in job_cache:
+                    job_cache[job_title] = get_or_create_job_by_title(job_title)
+
+                job_instance = job_cache[job_title]
+
+                submission_json = {
+                    k: v for k, v in row.items()
+                    if k.lower() != "job title"
+                }
+
+                submission_json["Role_Type"] = job_title
+                submission_json["job_id"] = job_instance.job_id if job_instance else None
+                submission_json["job_title"] = job_instance.title if job_instance else None
+
+                batch_objects.append(
+                    FormData(
+                        form_name="gxi_form",
+                        submission_data=submission_json
+                    )
+                )
+
+                if len(batch_objects) >= BATCH_SIZE:
+                    FormData.objects.bulk_create(batch_objects)
+                    created += len(batch_objects)
+                    batch_objects = []
+
+            except Exception as e:
+                errors.append(f"Row {idx}: {str(e)}")
+
+        if batch_objects:
+            FormData.objects.bulk_create(batch_objects)
+            created += len(batch_objects)
+
+        return Response({
+            "message": "File uploaded successfully!",
+            "total_rows": len(rows),
+            "created": created,
+            "failed": len(errors),
+            "errors": errors[:20],
+        }, status=status.HTTP_200_OK)

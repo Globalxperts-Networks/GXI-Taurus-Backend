@@ -54,30 +54,60 @@ class WatiService:
         phone: normalized phone string (no '+', include country code if needed)
         parameters: expected to be a list/dict as your WATI template requires
         """
-        phone_s = str(phone).lstrip("+")
-        url_path = f"api/v1/sendTemplateMessage/{phone_s}"
+
+        phone_s = str(phone).lstrip("+")  # clean phone number
+
+        endpoint = "api/v1/sendTemplateMessage"  # endpoint without phone in path
+
+        params = {
+            "whatsappNumber": phone_s  # phone as query param
+        }
+
         payload = {
             "template_name": template_name,
             "broadcast_name": broadcast_name,
             "parameters": parameters,
         }
-        return self._make_request("POST", url_path, json=payload)
+
+        return self._make_request(
+            method="POST",
+            endpoint=endpoint,
+            params=params,
+            json=payload
+        )
+
+    # -----------------------------------------------------------
+    # SESSION MESSAGE  (24 hr user initiated window)
+    # -----------------------------------------------------------
 
     def send_session_message(self, phone, message_text):
         """
-        Send a session (session message) to a phone.
-        phone must be normalized (no +). We don't force any country code here.
+        Correct URL:
+        https://live-mt-server.wati.io/<tenantId>/api/v1/sendSessionMessage/91<phone>?messageText=Hello
         """
         phone_s = str(phone).lstrip("+")
-        url_path = f"api/v1/sendSessionMessage/{phone_s}"
-        # Some WATI endpoints accept message in query params; preserve that pattern to avoid breaking.
+
+        # Session API requires number in the PATH (WATI rule)
+        endpoint = f"api/v1/sendSessionMessage/91{phone_s}"
+
         params = {"messageText": message_text}
-        return self._make_request("POST", url_path, params=params)
+
+        return self._make_request(
+            method="POST",
+            endpoint=endpoint,
+            params=params
+        )
+
+    # -----------------------------------------------------------
+    # GET MESSAGE HISTORY
+    # -----------------------------------------------------------
 
     def get_messages(self, phone):
         """
         Get all messages for phone. Returns whatever WATI returns under 'response'.
         """
         phone_s = str(phone).lstrip("+")
-        url_path = f"api/v1/getMessages/{phone_s}"
-        return self._make_request("GET", url_path)
+
+        endpoint = f"api/v1/getMessages/{phone_s}"
+
+        return self._make_request("GET", endpoint)
