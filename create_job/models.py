@@ -137,3 +137,28 @@ class add_job(TimeStampedModel):
         constraints = [
             models.UniqueConstraint(fields=['job_id'], name='unique_job_id_constraint'),
         ]
+
+class Question(models.Model):
+
+    QUESTION_TYPES = [
+        ("text", "Text Input"),
+        ("textarea", "Textarea"),
+        ("number", "Number Input"),
+        ("radio", "Radio Options"),
+        ("select", "Dropdown Select"),
+        ("multiselect", "Multiselect"),
+        ("slider", "Slider"),
+        ("checkbox", "Checkbox"),
+        ("file", "File Upload"),
+    ]
+
+    label = models.CharField(max_length=255)
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
+    options = models.JSONField(null=True, blank=True)
+    required = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=1)
+    jobs = models.ManyToManyField(add_job, related_name="questions")
+    section = models.CharField(max_length=100, null=True, blank=True)
+
+    def __str__(self):
+        return self.label

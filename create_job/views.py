@@ -41,3 +41,22 @@ class SkillsAPIView(APIView):
         return Response({"status": "success", "message": "Skill deleted"})
 
 
+
+from .models import Question, add_job
+from .serializers import QuestionSerializer
+
+class JobQuestionsAPIView(APIView):
+    def get(self, request, job_id):
+        # return Response({"status": "success", "message": "Fetching job questions"}, status=status.HTTP_200_OK)
+        try:
+            job = add_job.objects.get(id=job_id)
+        except add_job.DoesNotExist:
+            return Response(
+                {"error": "Job/Role does not exist"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        questions = Question.objects.filter(jobs=job).order_by("order")
+
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
