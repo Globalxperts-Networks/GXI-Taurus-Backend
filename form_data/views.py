@@ -574,10 +574,6 @@ class ComposeMailAPIView(APIView):
 from .resume_parser import parse_resume
 
 class ResumeParseAPIView(APIView):
-    """
-    POST file=form-data 'resume' -> return parsed fields
-    """
-
     def post(self, request):
         f = request.FILES.get("resume")
         if not f:
