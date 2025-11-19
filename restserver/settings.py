@@ -34,7 +34,8 @@ INSTALLED_APPS = [
     'google_form_work',
     'form_data',
     'create_job',
-    'keka_history'
+    'keka_history',
+    'microsoft_teams'
     #'tasks'
 ]
 
@@ -269,12 +270,10 @@ GOOGLE_SHEETS_CREDENTIALS_FILE = os.path.join(BASE_DIR, "gxihiring-d7185498ec0f.
 
 
 
-MS_CLIENT_ID = "6f6e285f-3708-4c01-9071-ad3d619e4811"
-MS_CLIENT_SECRET = "rnB8Q~piXZvEJWJlkI8YePVQzGhrIwu_ngAj0cSA"
-MS_TENANT_ID = "aadc5d1f-19d3-4ced-a0e5-0aae419ec4d2"
-MS_GRAPH_SCOPE = "https://graph.microsoft.com/.default"
-MS_TOKEN_URL = f"https://login.microsoftonline.com/{MS_TENANT_ID}/oauth2/v2.0/token"
-MS_GRAPH_API_URL = "https://graph.microsoft.com/v1.0"
+AZURE_TENANT_ID = "b6bc0503-84d4-4cab-9502-058795a1a3ce"
+AZURE_CLIENT_ID = "bb5aa073-9901-4f94-8935-dc3aa37b5855"
+AZURE_CLIENT_SECRET = "pXW8Q~NBTAUAaMRy9TH52LNv_TX1AuxADDyWLbDO"
+
 
 # For temporary storage of token (in production, use caching or database)
 MS_GRAPH_ACCESS_TOKEN = None

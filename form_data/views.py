@@ -18,13 +18,21 @@ from django.utils.html import strip_tags
 class FormDataAPIView(APIView):
     
     def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
-                      interview_date=None, interview_time=None, joining_date=None):
-
+                      interview_date=None, interview_time=None, joining_date=None,is_new_candidate=False):
+ 
         if not candidate_email:
             return
-
-        subject = f"Update: Your Application Status - {current_status}"
-
+        if is_new_candidate:
+            template_name = "application_welcome.html"
+            subject = "Thank You For Applying - GXI Networks"
+        else:
+            template_name = "application_status.html"
+            subject = f"Update: Your Application Status - {current_status}"
+           
+ 
+        # subject = f"Update: Your Application Status - {current_status}"
+        # html_message = render_to_string(template_name, context)
+ 
         context = {
             "candidate_name": candidate_name,
             "current_status": current_status,
@@ -33,13 +41,12 @@ class FormDataAPIView(APIView):
             "interview_time": interview_time,
             "joining_date": joining_date,
         }
-
+ 
         # Generate HTML email
-        html_message = render_to_string("application_status.html", context)
-
+        html_message = render_to_string(template_name, context)
         # You can still send a simple text fallback (optional)
         text_message = "Your application status has been updated."
-
+ 
         try:
             send_mail(
                 subject=subject,
@@ -142,7 +149,24 @@ class FormDataAPIView(APIView):
     def post(self, request):
         serializer = FormDataSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save() 
+            # Check if candidate already applied
+            candidate_email = request.data.get("submission_data", {}).get("Email")
+            is_new = not FormData.objects.filter(submission_data__Email=candidate_email).exists()
+ 
+            form_obj =serializer.save()
+             # Extract data from submission_data JSON
+            submission = form_obj.submission_data
+ 
+            self.send_status_email(
+            candidate_email=submission.get("Email"),
+            candidate_name=submission.get("Name"),
+            current_status=submission.get("status", "Applied"),
+            phase=submission.get("phase"),
+            interview_date=submission.get("interview_time"),
+            interview_time=submission.get("interview_time"),
+            joining_date=submission.get("joining_date"),
+            is_new_candidate=is_new
+        )
             return Response({
                 "status": "success",
                 "message": "Form data saved successfully",
@@ -153,9 +177,6 @@ class FormDataAPIView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # ================================
-    # PUT METHOD (UPDATED)
-    # ================================
     def put(self, request, pk):
         try:
             form = FormData.objects.get(pk=pk)

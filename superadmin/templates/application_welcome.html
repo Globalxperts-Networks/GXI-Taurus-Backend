@@ -9,7 +9,7 @@
             padding: 20px;
             border-radius: 8px;
         }
-        .status {
+        .welcome {
             font-size: 18px;
             font-weight: bold;
             color: #2d6cdf;
@@ -26,24 +26,19 @@
 <div class="container">
     <p>Dear {{ candidate_name }},</p>
  
-    <p>We wanted to inform you that your application status has been updated.</p>
+    <p class="welcome">Thank you for applying to GXI Networks!</p>
  
-    <p class="status">➡️ Current Status: {{ current_status }}</p>
+    <p>
+        We have successfully received your application and our HR Team will review your profile soon.  
+        You will receive updates regarding your application status on this email.
+    </p>
  
-    {% if phase %}
-        <p>➡️ Interview Phase: {{ phase }}</p>
-    {% endif %}
- 
-    {% if interview_date and interview_time %}
-        <p>📅 Interview Scheduled on: {{ interview_date }} at {{ interview_time }}</p>
-    {% endif %}
- 
-    {% if joining_date %}
-        <p>🎉 Your Joining Date: {{ joining_date }}</p>
-    {% endif %}
+    <p>
+        Please keep an eye on your inbox for interview schedules or additional steps.
+    </p>
  
     <p class="footer">
-        Thank you for your time and interest in joining our team.<br>
+        We appreciate your interest in joining our team.<br>
         Best regards,<br>
         <strong>GXI Networks HR Team</strong>
     </p>
