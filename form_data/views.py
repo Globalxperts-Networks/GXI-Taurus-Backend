@@ -112,7 +112,7 @@ class FormDataAPIView(APIView):
             forms = forms.order_by(sort_by)
 
             page = request.query_params.get('page', 1)
-            page_size = int(request.query_params.get('page_size', 10))
+            page_size = int(request.query_params.get('page_size', 25))
             paginator = Paginator(forms, page_size)
 
             try:
