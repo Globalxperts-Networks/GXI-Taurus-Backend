@@ -59,4 +59,5 @@ class JobQuestionsAPIView(APIView):
         questions = Question.objects.filter(jobs=job).order_by("order")
 
         serializer = QuestionSerializer(questions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+ 
