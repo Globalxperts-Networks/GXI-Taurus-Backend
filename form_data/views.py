@@ -178,18 +178,7 @@ class FormDataAPIView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, pk):
-        try:
-            form = FormData.objects.get(pk=pk)
-        except FormData.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Record not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        submission_data = form.submission_data or {}
-        old_status = submission_data.get("status", "Scouting")
-
-        # Input parameters
+        # Input capture
         new_status = request.data.get("status")
         reject_reason = request.data.get("reject_reason")
         interview_date = request.data.get("interview_date")
@@ -199,127 +188,189 @@ class FormDataAPIView(APIView):
         phase = request.data.get("phase")
         note = request.data.get("note")
 
-        candidate_name = submission_data.get("Name")
-        candidate_email = submission_data.get("Email")
+        ts = timezone.now().isoformat()
 
-        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        with transaction.atomic():
+            try:
+                form = FormData.objects.select_for_update().get(pk=pk)
+            except FormData.DoesNotExist:
+                return Response({"status": "error", "message": "Record not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if not old_status:
-            submission_data["status"] = "Scouting"
+            submission_data = form.submission_data or {}
+            old_status = submission_data.get("status", "Scouting")
 
-        # === SCOUTING ===
-        if old_status == "Scouting":
-            if new_status == "Reject":
-                if not reject_reason:
-                    return Response(
-                        {"status": "error", "message": "Reject reason required when rejecting from Scouting."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                submission_data.setdefault("status_history", []).append({
-                    "from": old_status,
-                    "to": "Reject",
-                    "reason": reject_reason,
-                    "updated_at": timestamp
+            candidate_name = submission_data.get("Name")
+            candidate_email = submission_data.get("Email")
+
+            # === NOTES: Always allow adding/updating notes regardless of status ===
+            note_was_added = False
+            if note:
+                submission_data.setdefault("notes_history", []).append({
+                    "note": note,
+                    "updated_at": ts
                 })
-                submission_data["status"] = "Reject"
-                submission_data["reject_reason"] = reject_reason
+                submission_data["note"] = note
+                note_was_added = True
 
-                self.send_status_email(candidate_email, candidate_name, "Reject")
+            # If no status change requested (either not provided or same as current), persist note and return success
+            # This ensures notes can be updated without being constrained by status rules.
+            if (new_status is None) or (new_status == old_status):
+                form.submission_data = submission_data
+                form.save()
+                serializer = FormDataSerializer(form)
+                # If it was purely a note update, we return success without sending any status email.
+                return Response({
+                    "status": "success",
+                    "message": f"Update saved (status unchanged: {submission_data.get('status')}).",
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK)
 
-            elif new_status == "Ongoing":
-                if not interview_date or not interview_time:
-                    return Response(
-                        {"status": "error", "message": "Interview date and time required to move from Scouting to Ongoing."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                submission_data.setdefault("status_history", []).append({
-                    "from": old_status,
-                    "to": "Ongoing",
-                    "phase": phase or "First Round",
-                    "interview_date": interview_date,
-                    "interview_time": interview_time,
-                    "updated_at": timestamp
-                })
-                submission_data["status"] = "Ongoing"
-                submission_data["phase"] = phase or "First Round"
-
-                self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
-
-            else:
+            # === At this point, a status change was requested and is different from old_status ===
+            # Disallow any status-changing action if record is already Reject/Hired
+            if old_status == "Reject":
                 return Response(
-                    {"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing' or 'Reject'."},
+                    {"status": "error", "message": "Cannot change status after rejection."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if old_status == "Hired":
+                return Response(
+                    {"status": "error", "message": "Candidate already hired. No further changes allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # === ONGOING ===
-        elif old_status == "Ongoing":
-            if new_status == "Hired":
-                if not offer_letter_date or not joining_date:
+            # Now process allowed transitions from old_status -> new_status
+            # === SCOUTING ===
+            if old_status == "Scouting":
+                if new_status == "Reject":
+                    if not reject_reason:
+                        return Response(
+                            {"status": "error", "message": "Reject reason required when rejecting from Scouting."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Reject",
+                        "reason": reject_reason,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Reject"
+                    submission_data["reject_reason"] = reject_reason
+
+                    # send status email (keep as-is or enqueue)
+                    self.send_status_email(candidate_email, candidate_name, "Reject")
+
+                elif new_status == "Ongoing":
+                    if not interview_date or not interview_time:
+                        return Response(
+                            {"status": "error", "message": "Interview date and time required to move from Scouting to Ongoing."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Ongoing",
+                        "phase": phase or "First Round",
+                        "interview_date": interview_date,
+                        "interview_time": interview_time,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Ongoing"
+                    submission_data["phase"] = phase or "First Round"
+                    submission_data["interview_date"] = interview_date
+                    submission_data["interview_time"] = interview_time
+
+                    self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
+
+                else:
                     return Response(
-                        {"status": "error", "message": "Offer letter release date and joining date required to mark as Hired."},
+                        {"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing' or 'Reject'."},
                         status=status.HTTP_400_BAD_REQUEST
                     )
-                submission_data.setdefault("status_history", []).append({
-                    "from": "Ongoing",
-                    "to": "Hired",
-                    "offer_letter_date": offer_letter_date,
-                    "joining_date": joining_date,
-                    "updated_at": timestamp
-                })
-                submission_data["status"] = "Hired"
-                submission_data["offer_letter_date"] = offer_letter_date
-                submission_data["joining_date"] = joining_date
-                submission_data["phase"] = "Final Selection"
 
-                self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
+            # === ONGOING ===
+            elif old_status == "Ongoing":
+                if new_status == "Hired":
+                    if not offer_letter_date or not joining_date:
+                        return Response(
+                            {"status": "error", "message": "Offer letter release date and joining date required to mark as Hired."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    submission_data.setdefault("status_history", []).append({
+                        "from": "Ongoing",
+                        "to": "Hired",
+                        "offer_letter_date": offer_letter_date,
+                        "joining_date": joining_date,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Hired"
+                    submission_data["offer_letter_date"] = offer_letter_date
+                    submission_data["joining_date"] = joining_date
+                    submission_data["phase"] = "Final Selection"
+
+                    self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
+
+                elif new_status == "Reject":
+                    # allow reject from Ongoing (require reason)
+                    if not reject_reason:
+                        return Response(
+                            {"status": "error", "message": "Reject reason required when rejecting from Ongoing."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    submission_data.setdefault("status_history", []).append({
+                        "from": "Ongoing",
+                        "to": "Reject",
+                        "reason": reject_reason,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Reject"
+                    submission_data["reject_reason"] = reject_reason
+
+                    self.send_status_email(candidate_email, candidate_name, "Reject")
+
+                elif new_status == "Ongoing":
+                    # This branch is redundant because we already handled new_status == old_status earlier.
+                    # But keep logic for the case where client submits new_status="Ongoing" and wants to update schedule/phase.
+                    history_entry = {
+                        "from": "Ongoing",
+                        "to": "Ongoing",
+                        "phase": phase or submission_data.get("phase", "Next Round"),
+                        "updated_at": ts
+                    }
+                    if interview_date:
+                        submission_data["interview_date"] = interview_date
+                        history_entry["interview_date"] = interview_date
+                    if interview_time:
+                        submission_data["interview_time"] = interview_time
+                        history_entry["interview_time"] = interview_time
+
+                    submission_data.setdefault("status_history", []).append(history_entry)
+                    submission_data["status"] = "Ongoing"
+                    submission_data["phase"] = phase or submission_data.get("phase", "Next Round")
+
+                    self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
+
+                else:
+                    return Response(
+                        {"status": "error", "message": f"Invalid transition from Ongoing to {new_status}."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
             else:
-                history_entry = {
-                    "from": "Ongoing",
-                    "to": new_status or "Ongoing",
-                    "phase": phase or "Next Round",
-                    "updated_at": timestamp
-                }
-                if interview_date:
-                    history_entry["interview_date"] = interview_date
-                if interview_time:
-                    history_entry["interview_time"] = interview_time
+                # If some new status value or unknown old_status falls through
+                return Response(
+                    {"status": "error", "message": f"Unhandled current status: {old_status}."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-                submission_data.setdefault("status_history", []).append(history_entry)
-                submission_data["status"] = "Ongoing"
-                submission_data["phase"] = phase or "Next Round"
+            # Persist final submission_data after status change
+            form.submission_data = submission_data
+            form.save()
 
-                self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
-
-        elif old_status == "Reject":
-            return Response(
-                {"status": "error", "message": "Cannot change status after rejection."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        elif old_status == "Hired":
-            return Response(
-                {"status": "error", "message": "Candidate already hired. No further changes allowed."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # === Notes ===
-        if note:
-            submission_data.setdefault("notes_history", []).append({
-                "note": note,
-                "updated_at": timestamp
-            })
-            submission_data["note"] = note
-
-        form.submission_data = submission_data
-        form.save()
-
-        serializer = FormDataSerializer(form)
-        return Response({
-            "status": "success",
-            "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+            serializer = FormDataSerializer(form)
+            return Response({
+                "status": "success",
+                "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
 
 
 
