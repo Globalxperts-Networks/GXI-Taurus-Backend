@@ -16,3 +16,17 @@ class Member(models.Model):
 
     def __str__(self):
         return self.display_name
+
+
+
+
+class Meeting(models.Model):
+    organizer_ad_id = models.CharField(max_length=128)   # AD object id of organizer
+    subject = models.CharField(max_length=255, blank=True)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    graph_response = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.subject} ({self.organizer_ad_id}) {self.start.isoformat()}"

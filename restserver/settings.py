@@ -270,9 +270,11 @@ GOOGLE_SHEETS_CREDENTIALS_FILE = os.path.join(BASE_DIR, "gxihiring-d7185498ec0f.
 
 
 
-AZURE_TENANT_ID = "b6bc0503-84d4-4cab-9502-058795a1a3ce"
-AZURE_CLIENT_ID = "bb5aa073-9901-4f94-8935-dc3aa37b5855"
+AZURE_TENANT_ID = "aadc5d1f-19d3-4ced-a0e5-0aae419ec4d2"
+AZURE_CLIENT_ID = "e96d9338-9d3e-4733-98cd-d2d600f45abf"
 AZURE_CLIENT_SECRET = "pXW8Q~NBTAUAaMRy9TH52LNv_TX1AuxADDyWLbDO"
+
+TEAMS_REQUIRE_APPACCESSPOLICY = True
 
 
 # For temporary storage of token (in production, use caching or database)

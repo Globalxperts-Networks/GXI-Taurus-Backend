@@ -1,108 +1,117 @@
+# graph_service.py
+import time
 import requests
-
-class GraphService:
-    def __init__(self, tenant_id, client_id, client_secret):
-        self.token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.scope = ["https://graph.microsoft.com/.default"]
-
-    def get_token(self):
-        data = {
-            "grant_type": "client_credentials",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "scope": "https://graph.microsoft.com/.default"
-        }
-        response = requests.post(self.token_url, data=data)
-        return response.json()["access_token"]
-
-    def get_teams(self, access_token):
-        url = "https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(c:c eq 'Unified')"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        return requests.get(url, headers=headers).json()
-
-    def get_team_members(self, access_token, group_id):
-        url = f"https://graph.microsoft.com/v1.0/groups/{group_id}/members"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        return requests.get(url, headers=headers).json()
-
-
-
-
-# adsync/graph_service.py
-import requests
+import base64
+import json
 from django.conf import settings
 
+_token_cache = {"access_token": None, "expiry_time": 0}
+
+class GraphAPIError(Exception):
+    def __init__(self, status_code, body):
+        self.status_code = status_code
+        self.body = body
+        super().__init__(f"Graph API {status_code}: {body}")
+
 class GraphService:
-    TOKEN_URL = 'https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token'
-    GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
+    TOKEN_URL = "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+    GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 
-    def __init__(self):
-        self.tenant = settings.AZURE_TENANT_ID
-        self.client_id = settings.AZURE_CLIENT_ID
-        self.client_secret = settings.AZURE_CLIENT_SECRET
+    def __init__(self, tenant_id=None, client_id=None, client_secret=None):
+        self.tenant = tenant_id or getattr(settings, "AZURE_TENANT_ID", None)
+        self.client_id = client_id or getattr(settings, "AZURE_CLIENT_ID", None)
+        self.client_secret = client_secret or getattr(settings, "AZURE_CLIENT_SECRET", None)
+        if not all([self.tenant, self.client_id, self.client_secret]):
+            raise ValueError("Azure credentials missing in constructor or settings.")
 
-    def get_app_token(self):
+    # Token logic (app-only)
+    def _is_token_valid(self):
+        return _token_cache["access_token"] and time.time() < _token_cache["expiry_time"] - 10
+
+    def _store_token(self, token, expires_in):
+        _token_cache["access_token"] = token
+        _token_cache["expiry_time"] = time.time() + int(expires_in)
+
+    def get_app_token(self, force_refresh=False):
+        if not force_refresh and self._is_token_valid():
+            return _token_cache["access_token"]
+
         url = self.TOKEN_URL.format(tenant=self.tenant)
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'scope': 'https://graph.microsoft.com/.default',
-            'grant_type': 'client_credentials',
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "scope": "https://graph.microsoft.com/.default",
+            "grant_type": "client_credentials",
         }
-        r = requests.post(url, data=data, timeout=15)
-        r.raise_for_status()
-        body = r.json()
-        token = body.get('access_token')
+        resp = requests.post(url, data=data, timeout=15)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except ValueError:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        body = resp.json()
+        token = body.get("access_token")
+        expires_in = body.get("expires_in", 3600)
         if not token:
-            raise Exception(f"No access_token in token response: {body}")
+            raise Exception(f"No access_token: {body}")
+        self._store_token(token, expires_in)
         return token
 
-    def create_online_meeting_as_app(self, user_object_id, subject, start_iso, end_iso):
-        """
-        Create a standalone online meeting for user (app permissions).
-        POST /users/{userId}/onlineMeetings
-        Returns the JSON response which contains 'joinWebUrl'.
-        NOTE: Requires OnlineMeetings.ReadWrite.All (Application) and application access policy allowing your app to act for the user.
-        """
-        token = self.get_app_token()
-        url = f"{self.GRAPH_BASE}/users/{user_object_id}/onlineMeetings"
-        body = {
-            "startDateTime": start_iso,
-            "endDateTime": end_iso,
-            "subject": subject
-        }
-        headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-        r = requests.post(url, json=body, headers=headers, timeout=20)
-        r.raise_for_status()
-        return r.json()
+    def decode_jwt_no_verify(self, token):
+        try:
+            parts = token.split(".")
+            if len(parts) < 2:
+                return {}
+            payload = parts[1] + "=" * (-len(parts[1]) % 4)
+            return json.loads(base64.urlsafe_b64decode(payload))
+        except Exception as e:
+            return {"error": f"decode_failed: {e}"}
 
-    def create_calendar_event_with_teams(self, user_principal_name, subject, start_iso, end_iso, attendees_list):
+    # ---- Create online meeting (app-only) ----
+    def create_online_meeting_app(self, token: str, organizer_user_id: str, start_dt: str, end_dt: str, subject: str = None, meeting_options: dict = None):
         """
-        Create a calendar event on a user's calendar with Teams meeting link.
-        POST /users/{userPrincipalName}/events
-        attendees_list: list of dicts -> [{"email":"a@b.com","name":"A"} , ...]
-        Returns event JSON which contains onlineMeeting/joinUrl in 'onlineMeeting' or in 'onlineMeeting' fields.
-        NOTE: Requires Calendars.ReadWrite (Application).
+        Create online meeting using app-only token for a chosen organizer.
+        POST /users/{organizer_user_id}/onlineMeetings
+        start_dt/end_dt in ISO-8601 UTC e.g. "2025-11-20T10:00:00Z"
+        meeting_options: optional dict to pass additional Graph fields.
         """
-        token = self.get_app_token()
-        url = f"{self.GRAPH_BASE}/users/{user_principal_name}/events"
-        attendees_payload = []
-        for a in attendees_list:
-            attendees_payload.append({
-                "emailAddress": {"address": a.get('email'), "name": a.get('name', '')},
-                "type": "required"
-            })
-        body = {
-            "subject": subject,
-            "start": {"dateTime": start_iso, "timeZone": "UTC"},
-            "end": {"dateTime": end_iso, "timeZone": "UTC"},
-            "isOnlineMeeting": True,
-            "onlineMeetingProvider": "teamsForBusiness",
-            "attendees": attendees_payload
+        url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/onlineMeetings"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        payload = {
+            "startDateTime": start_dt,
+            "endDateTime": end_dt,
+            "subject": subject or "Scheduled via API"
         }
-        headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-        r = requests.post(url, json=body, headers=headers, timeout=20)
-        r.raise_for_status()
-        return r.json()
+        if meeting_options:
+            payload.update(meeting_options)
+
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except ValueError:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        return resp.json()
+
+    # ---- Create online meeting (delegated) ----
+    def create_online_meeting_delegated(self, delegated_token: str, start_dt: str, end_dt: str, subject: str = None, meeting_options: dict = None):
+        """
+        Create online meeting using a delegated token (on-behalf-of a signed-in user).
+        POST /me/onlineMeetings
+        """
+        url = f"{self.GRAPH_BASE}/me/onlineMeetings"
+        headers = {"Authorization": f"Bearer {delegated_token}", "Content-Type": "application/json"}
+        payload = {"startDateTime": start_dt, "endDateTime": end_dt, "subject": subject or "Scheduled via API"}
+        if meeting_options:
+            payload.update(meeting_options)
+
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except ValueError:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        return resp.json()
