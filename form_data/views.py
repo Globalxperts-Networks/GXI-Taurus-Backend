@@ -18,6 +18,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import FormData
 from .serializers import FormDataSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import FileSystemStorage
 
 logger = logging.getLogger(__name__)
 
@@ -194,12 +195,6 @@ class FormDataAPIView(APIView):
     # PUT METHOD (update status / notes)
     # ================================
     def put(self, request, pk):
-        """
-        Update status transitions or simply add notes.
-        Notes are allowed regardless of current status.
-        Status transitions follow the business logic defined in your original code.
-        """
-        # Capture inputs (prefer request body top-level fields; if not present, fall back to submission_data fields)
         new_status = request.data.get("status")
         reject_reason = request.data.get("reject_reason")
         interview_date = request.data.get("interview_date")
@@ -550,12 +545,16 @@ def send_composed_email(to_email, cc_emails, subject, message):
         print(f"⚠️ Email sending failed: {e}")
         return False
 
+
 class ComposeMailAPIView(APIView):
     def post(self, request, pk):
         cc_emails = request.data.get("cc_emails", "")
         message = request.data.get("message")
-
+        attachment_file = request.FILES.get("attachment")
+ 
         cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+ 
+        # Fetch FormData using pk from URL
         try:
             form_obj = FormData.objects.get(pk=pk)
         except FormData.DoesNotExist:
@@ -563,16 +562,12 @@ class ComposeMailAPIView(APIView):
                 {"status": "error", "message": "Record not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-
+ 
         submission = form_obj.submission_data
-
-        current_status = submission.get("status")
-        subject = f"Update: Your Application Status - {current_status}"
-
         candidate_email = submission.get("Email")
         role = submission.get("Role_Type", "Not Provided")
         current_status = submission.get("status", "Unknown")
-
+ 
         # Replace placeholders dynamically in message
         subject = f"Role: {role} | Status: {current_status}"
         message = message.format(
@@ -581,15 +576,41 @@ class ComposeMailAPIView(APIView):
             phone=submission.get("Phone"),
             role=submission.get("Role_Type")
         )
-
+        saved_file_path = None
+ 
+        if attachment_file:
+            fs = FileSystemStorage(location='media/email_attachments/')
+            saved_name = fs.save(attachment_file.name, attachment_file)
+            saved_file_path = f"email_attachments/{saved_name}"  # relative path to media
+ 
+        # =============================================
+        # ⭐ UPDATE submission_data JSON STRUCTURE
+        # =============================================
+        email_log = {
+            "subject": subject,
+            "message": message,
+            "cc": cc_list,
+            "attachments": [saved_file_path] if saved_file_path else []
+        }
+        if "email_message" not in submission or not isinstance(submission["email_message"], list):
+            submission["email_message"] = []
+ 
+        # Append new email message entry
+        submission["email_message"].append(email_log)
+ 
+       
+        # SAVE MESSAGE IN DATABASE
+        form_obj.submission_data = submission
+        form_obj.save()
         # Send email
         send_composed_email(
             to_email=candidate_email,
             cc_emails=cc_list,
             subject=subject,
-            message=message
+            message=message,
+            attachment_file=attachment_file,
         )
-
+ 
         return Response({"message": "Email sent successfully!"})
     
     
