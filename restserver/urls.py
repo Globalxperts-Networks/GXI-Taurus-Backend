@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/candidates/', include('candidate_form.urls')),
     path('api/form_data/', include('form_data.urls')),
     path('api/create_job/', include('create_job.urls')),
+    path('api/microsoft_teams/', include('microsoft_teams.urls')),
     # path('api/tasks/', include('tasks.urls')),
 ]
 if settings.DEBUG:

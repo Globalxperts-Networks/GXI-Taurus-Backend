@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SkillsAPIView
+from .views import SkillsAPIView, JobQuestionsAPIView
 from .departmentviews import DepartmentAPIView
 from .jobtypesviews import jobtypesAPIView
 from .locationViews import LocationAPIView
@@ -26,4 +26,5 @@ urlpatterns = [
     path("teams/<int:pk>/", teamsAPIView.as_view()),
     path("addjob/", AddJobAPIView.as_view()),
     path("addjob/<int:pk>/", AddJobAPIView.as_view()),
+    path('jobs/<int:job_id>/questions/', JobQuestionsAPIView.as_view(), name="job-questions"),
 ]

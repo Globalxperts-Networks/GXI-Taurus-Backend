@@ -1,17 +1,26 @@
-from unittest import result
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.db.models import Q
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.utils import timezone
-from django.core.mail import send_mail
-from .models import FormData
-from .serializers import FormDataSerializer
-import requests
+import json
+import logging
 from functools import reduce
 from operator import or_
+import json
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
+from django.utils import timezone
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils.html import strip_tags
+
+from .models import FormData
+from .serializers import FormDataSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage,get_connection
 from django.utils.html import strip_tags
 from django.core.files.storage import FileSystemStorage
@@ -21,15 +30,22 @@ from imapclient import IMAPClient
 import pyzmail
 from datetime import datetime
 
-class FormDataAPIView(APIView):
-    
-    def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
-                      interview_date=None, interview_time=None, joining_date=None):
+logger = logging.getLogger(__name__)
 
+
+class FormDataAPIView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
+                          interview_date=None, interview_time=None, joining_date=None, is_new_candidate=False):
         if not candidate_email:
             return
 
-        subject = f"Update: Your Application Status - {current_status}"
+        if is_new_candidate:
+            template_name = "application_welcome.html"
+            subject = "Thank You For Applying - GXI Networks"
+        else:
+            template_name = "application_status.html"
+            subject = f"Update: Your Application Status - {current_status}"
 
         context = {
             "candidate_name": candidate_name,
@@ -40,36 +56,29 @@ class FormDataAPIView(APIView):
             "joining_date": joining_date,
         }
 
-        # Generate HTML email
-        html_message = render_to_string("application_status.html", context)
-
-        # You can still send a simple text fallback (optional)
-        text_message = "Your application status has been updated."
+        html_message = render_to_string(template_name, context)
+        text_message = strip_tags(html_message) if html_message else "Your application status has been updated."
 
         try:
             send_mail(
                 subject=subject,
-                message=text_message,      # plain text fallback
-                from_email='',              # DEFAULT_FROM_EMAIL or your email
+                message=text_message,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or "",
                 recipient_list=[candidate_email],
-                html_message=html_message,  # Load HTML template
+                html_message=html_message,
                 fail_silently=False,
             )
         except Exception as e:
-            print(f"⚠️ Email send failed to {candidate_email}: {e}")
+            # Log error; do not raise to keep API flow stable
+            logger.exception("Failed to send status email to %s: %s", candidate_email, str(e))
 
-    # ================================
-    # GET METHOD
-    # ================================
     def get(self, request, pk=None):
         try:
             if pk:
                 form = FormData.objects.filter(id=pk).first()
                 if not form:
-                    return Response(
-                        {"status": "error", "message": "Record not found"},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
+                    return Response({"status": "error", "message": "Record not found"},
+                                    status=status.HTTP_404_NOT_FOUND)
                 serializer = FormDataSerializer(form)
                 return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 
@@ -77,8 +86,7 @@ class FormDataAPIView(APIView):
             form_name = request.query_params.get('form_name', None)
             sort_by = request.query_params.get('sort_by', '-submitted_at')
 
-            # NEW: role_type filters
-            role_type_param = request.query_params.get('role_type')  # e.g., "SDET" or "Software...,SDET"
+            role_type_param = request.query_params.get('role_type')  # comma separated
             role_type_exact = request.query_params.get('role_type_exact', 'false').lower() in ('1', 'true', 'yes')
 
             forms = FormData.objects.all()
@@ -86,23 +94,32 @@ class FormDataAPIView(APIView):
             if form_name:
                 forms = forms.filter(form_name__icontains=form_name)
 
-            # existing search across name + JSON text
             if search_query:
                 forms = forms.filter(
                     Q(form_name__icontains=search_query) |
                     Q(submission_data__icontains=search_query)
                 )
 
-            # NEW: Role_Type inside submission_data (top-level key)
-            # Works on PostgreSQL natively; on SQLite it will still work for icontains via JSONField text casting.
+            # -------------------------------------
+            # ROLE TYPE FILTER (CASE-INSENSITIVE)
+            # -------------------------------------
             if role_type_param:
                 role_types = [rt.strip() for rt in role_type_param.split(',') if rt.strip()]
+
                 if role_types:
                     if role_type_exact:
-                        conds = [Q(submission_data__Role_Type__iexact=rt) for rt in role_types]
+                        # CASE-INSENSITIVE EXACT MATCH
+                        conds = [
+                            Q(submission_data__Role_Type__iexact=rt)
+                            for rt in role_types
+                        ]
                     else:
-                        conds = [Q(submission_data__Role_Type__icontains=rt) for rt in role_types]
-                    # OR all role conditions together
+                        # CASE-INSENSITIVE CONTAINS MATCH
+                        conds = [
+                            Q(submission_data__Role_Type__icontains=rt)
+                            for rt in role_types
+                        ]
+
                     forms = forms.filter(reduce(or_, conds))
 
             valid_sort_fields = ['form_name', 'submitted_at']
@@ -111,7 +128,7 @@ class FormDataAPIView(APIView):
             forms = forms.order_by(sort_by)
 
             page = request.query_params.get('page', 1)
-            page_size = int(request.query_params.get('page_size', 10))
+            page_size = int(request.query_params.get('page_size', 25))
             paginator = Paginator(forms, page_size)
 
             try:
@@ -133,45 +150,72 @@ class FormDataAPIView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response(
-                {"status": "error", "message": f"An error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+            logger.exception("GET FormData error: %s", str(e))
+            return Response({"status": "error", "message": f"An error occurred: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     # ================================
     # POST METHOD
     # ================================
-
     def post(self, request):
-        serializer = FormDataSerializer(data=request.data)
+        submission_data_raw = request.data.get("submission_data")
+       
+
+        # Convert JSON string from multipart form
+        if isinstance(submission_data_raw, str):
+            try:
+                submission_data = json.loads(submission_data_raw)
+            except Exception as e:
+                return Response(
+                    {"error": "Invalid JSON in submission_data", "details": str(e)},
+                    status=400
+                )
+        elif isinstance(submission_data_raw, dict):
+            submission_data = submission_data_raw
+        else:
+            submission_data = {}
+
+        data = request.data.copy()
+
+        # 🔥 Convert dict → JSON string for serializer
+        data["submission_data"] = json.dumps(submission_data)
+
+        serializer = FormDataSerializer(data=data)
+
         if serializer.is_valid():
-            serializer.save() 
+            candidate_email = submission_data.get("Email")
+            is_new = not FormData.objects.filter(
+                submission_data__Email=candidate_email
+            ).exists()
+
+            form_obj = serializer.save()
+            submission = form_obj.submission_data  # Python dict (auto parsed)
+
+            self.send_status_email(
+                candidate_email=submission.get("Email"),
+                candidate_name=submission.get("Name"),
+                current_status=submission.get("status", "Applied"),
+                phase=submission.get("phase"),
+                interview_date=submission.get("interview_time"),
+                interview_time=submission.get("interview_time"),
+                joining_date=submission.get("joining_date"),
+                is_new_candidate=is_new
+            )
+
             return Response({
                 "status": "success",
                 "message": "Form data saved successfully",
                 "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
+            }, status=201)
+
         return Response({
             "status": "error",
             "errors": serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        }, status=400)
 
     # ================================
-    # PUT METHOD (UPDATED)
+    # PUT METHOD (update status / notes)
     # ================================
     def put(self, request, pk):
-        try:
-            form = FormData.objects.get(pk=pk)
-        except FormData.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Record not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        submission_data = form.submission_data or {}
-        old_status = submission_data.get("status", "Scouting")
-
-        # Input parameters
         new_status = request.data.get("status")
         reject_reason = request.data.get("reject_reason")
         interview_date = request.data.get("interview_date")
@@ -181,127 +225,166 @@ class FormDataAPIView(APIView):
         phase = request.data.get("phase")
         note = request.data.get("note")
 
-        candidate_name = submission_data.get("Name")
-        candidate_email = submission_data.get("Email")
+        ts = timezone.now().isoformat()
 
-        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        with transaction.atomic():
+            try:
+                form = FormData.objects.select_for_update().get(pk=pk)
+            except FormData.DoesNotExist:
+                return Response({"status": "error", "message": "Record not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if not old_status:
-            submission_data["status"] = "Scouting"
+            submission_data = form.submission_data or {}
+            old_status = submission_data.get("status", "Scouting")
 
-        # === SCOUTING ===
-        if old_status == "Scouting":
-            if new_status == "Reject":
-                if not reject_reason:
-                    return Response(
-                        {"status": "error", "message": "Reject reason required when rejecting from Scouting."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                submission_data.setdefault("status_history", []).append({
-                    "from": old_status,
-                    "to": "Reject",
-                    "reason": reject_reason,
-                    "updated_at": timestamp
+            candidate_name = submission_data.get("Name")
+            candidate_email = submission_data.get("Email")
+
+            # === NOTES: Always allow adding/updating notes regardless of status ===
+            note_was_added = False
+            if note:
+                submission_data.setdefault("notes_history", []).append({
+                    "note": note,
+                    "updated_at": ts
                 })
-                submission_data["status"] = "Reject"
-                submission_data["reject_reason"] = reject_reason
+                submission_data["note"] = note
+                note_was_added = True
 
-                self.send_status_email(candidate_email, candidate_name, "Reject")
+            # If either no status provided, or same as current => save note only (if any) and return
+            if (new_status is None) or (new_status == old_status):
+                form.submission_data = submission_data
+                form.save()
+                serializer = FormDataSerializer(form)
+                return Response({
+                    "status": "success",
+                    "message": f"Update saved (status unchanged: {submission_data.get('status')}).",
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK)
 
-            elif new_status == "Ongoing":
-                if not interview_date or not interview_time:
-                    return Response(
-                        {"status": "error", "message": "Interview date and time required to move from Scouting to Ongoing."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                submission_data.setdefault("status_history", []).append({
-                    "from": old_status,
-                    "to": "Ongoing",
-                    "phase": phase or "First Round",
-                    "interview_date": interview_date,
-                    "interview_time": interview_time,
-                    "updated_at": timestamp
-                })
-                submission_data["status"] = "Ongoing"
-                submission_data["phase"] = phase or "First Round"
+            # Disallow changes after Reject/Hired
+            if old_status == "Reject":
+                return Response({"status": "error", "message": "Cannot change status after rejection."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if old_status == "Hired":
+                return Response({"status": "error", "message": "Candidate already hired. No further changes allowed."},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-                self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
+            # Now process transitions
+            # === SCOUTING ===
+            if old_status == "Scouting":
+                if new_status == "Reject":
+                    if not reject_reason:
+                        return Response({"status": "error", "message": "Reject reason required when rejecting from Scouting."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Reject",
+                        "reason": reject_reason,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Reject"
+                    submission_data["reject_reason"] = reject_reason
+
+                    self.send_status_email(candidate_email, candidate_name, "Reject")
+
+                elif new_status == "Ongoing":
+                    if not (interview_date or interview_time):
+                        return Response({"status": "error", "message": "Interview date and/or time required to move to Ongoing."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Ongoing",
+                        "phase": phase or "First Round",
+                        "interview_date": interview_date,
+                        "interview_time": interview_time,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Ongoing"
+                    submission_data["phase"] = phase or "First Round"
+                    if interview_date:
+                        submission_data["interview_date"] = interview_date
+                    if interview_time:
+                        submission_data["interview_time"] = interview_time
+
+                    self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
+
+                else:
+                    return Response({"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing' or 'Reject'."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+            # === ONGOING ===
+            elif old_status == "Ongoing":
+                if new_status == "Hired":
+                    if not (offer_letter_date and joining_date):
+                        return Response({"status": "error", "message": "Offer letter date and joining date required to mark as Hired."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    submission_data.setdefault("status_history", []).append({
+                        "from": "Ongoing",
+                        "to": "Hired",
+                        "offer_letter_date": offer_letter_date,
+                        "joining_date": joining_date,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Hired"
+                    submission_data["offer_letter_date"] = offer_letter_date
+                    submission_data["joining_date"] = joining_date
+                    submission_data["phase"] = "Final Selection"
+
+                    self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
+
+                elif new_status == "Reject":
+                    if not reject_reason:
+                        return Response({"status": "error", "message": "Reject reason required when rejecting from Ongoing."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    submission_data.setdefault("status_history", []).append({
+                        "from": "Ongoing",
+                        "to": "Reject",
+                        "reason": reject_reason,
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Reject"
+                    submission_data["reject_reason"] = reject_reason
+
+                    self.send_status_email(candidate_email, candidate_name, "Reject")
+
+                elif new_status == "Ongoing":
+                    # Update schedule/phase while keeping status the same
+                    history_entry = {
+                        "from": "Ongoing",
+                        "to": "Ongoing",
+                        "phase": phase or submission_data.get("phase", "Next Round"),
+                        "updated_at": ts
+                    }
+                    if interview_date:
+                        submission_data["interview_date"] = interview_date
+                        history_entry["interview_date"] = interview_date
+                    if interview_time:
+                        submission_data["interview_time"] = interview_time
+                        history_entry["interview_time"] = interview_time
+
+                    submission_data.setdefault("status_history", []).append(history_entry)
+                    submission_data["status"] = "Ongoing"
+                    submission_data["phase"] = phase or submission_data.get("phase", "Next Round")
+
+                    self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
+
+                else:
+                    return Response({"status": "error", "message": f"Invalid transition from Ongoing to {new_status}."},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
             else:
-                return Response(
-                    {"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing' or 'Reject'."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"status": "error", "message": f"Unhandled current status: {old_status}."},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-        # === ONGOING ===
-        elif old_status == "Ongoing":
-            if new_status == "Hired":
-                if not offer_letter_date or not joining_date:
-                    return Response(
-                        {"status": "error", "message": "Offer letter release date and joining date required to mark as Hired."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                submission_data.setdefault("status_history", []).append({
-                    "from": "Ongoing",
-                    "to": "Hired",
-                    "offer_letter_date": offer_letter_date,
-                    "joining_date": joining_date,
-                    "updated_at": timestamp
-                })
-                submission_data["status"] = "Hired"
-                submission_data["offer_letter_date"] = offer_letter_date
-                submission_data["joining_date"] = joining_date
-                submission_data["phase"] = "Final Selection"
+            # Persist changes
+            form.submission_data = submission_data
+            form.save()
 
-                self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
-
-            else:
-                history_entry = {
-                    "from": "Ongoing",
-                    "to": new_status or "Ongoing",
-                    "phase": phase or "Next Round",
-                    "updated_at": timestamp
-                }
-                if interview_date:
-                    history_entry["interview_date"] = interview_date
-                if interview_time:
-                    history_entry["interview_time"] = interview_time
-
-                submission_data.setdefault("status_history", []).append(history_entry)
-                submission_data["status"] = "Ongoing"
-                submission_data["phase"] = phase or "Next Round"
-
-                self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
-
-        elif old_status == "Reject":
-            return Response(
-                {"status": "error", "message": "Cannot change status after rejection."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        elif old_status == "Hired":
-            return Response(
-                {"status": "error", "message": "Candidate already hired. No further changes allowed."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # === Notes ===
-        if note:
-            submission_data.setdefault("notes_history", []).append({
-                "note": note,
-                "updated_at": timestamp
-            })
-            submission_data["note"] = note
-
-        form.submission_data = submission_data
-        form.save()
-
-        serializer = FormDataSerializer(form)
-        return Response({
-            "status": "success",
-            "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
+            serializer = FormDataSerializer(form)
+            return Response({
+                "status": "success",
+                "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
 
 
 
@@ -465,11 +548,7 @@ class SendSessionMessageAPIView(APIView):
             status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
 
-def send_composed_email(to_email, cc_emails, subject, message,attachment_file=None):
-    """
-    Send custom email with TO, CC, SUBJECT, and message body (NO TEMPLATE)
-    """
-
+def send_composed_email(to_email, cc_emails, subject, message,attachment_file=None): 
     try:
         email = EmailMessage(
             subject=subject,
@@ -478,14 +557,14 @@ def send_composed_email(to_email, cc_emails, subject, message,attachment_file=No
             to=[to_email],
             cc=cc_emails,
         )
-
+ 
         email.content_subtype = "html"   # if message contains HTML tags
         if attachment_file:
             email.attach(attachment_file.name, attachment_file.read(), attachment_file.content_type)
-
+ 
         email.send()
         return True
-
+ 
     except Exception as e:
         print(f"⚠️ Email sending failed: {e}")
         return False
@@ -494,10 +573,10 @@ class ComposeMailAPIView(APIView):
     def post(self, request, pk):
         cc_emails = request.data.get("cc_emails", "")
         message = request.data.get("message")
-        attachment_file = request.FILES.get("attachment") 
-
+        attachment_file = request.FILES.get("attachment")
+ 
         cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
-
+ 
         # Fetch FormData using pk from URL
         try:
             form_obj = FormData.objects.get(pk=pk)
@@ -506,12 +585,12 @@ class ComposeMailAPIView(APIView):
                 {"status": "error", "message": "Record not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-
+ 
         submission = form_obj.submission_data
         candidate_email = submission.get("Email")
         role = submission.get("Role_Type", "Not Provided")
         current_status = submission.get("status", "Unknown")
-
+ 
         # Replace placeholders dynamically in message
         subject = f"Role: {role} | Status: {current_status}"
         message = message.format(
@@ -521,12 +600,12 @@ class ComposeMailAPIView(APIView):
             role=submission.get("Role_Type")
         )
         saved_file_path = None
-
+ 
         if attachment_file:
             fs = FileSystemStorage(location='media/email_attachments/')
             saved_name = fs.save(attachment_file.name, attachment_file)
             saved_file_path = f"email_attachments/{saved_name}"  # relative path to media
-
+ 
         # =============================================
         # ⭐ UPDATE submission_data JSON STRUCTURE
         # =============================================
@@ -538,11 +617,11 @@ class ComposeMailAPIView(APIView):
         }
         if "email_message" not in submission or not isinstance(submission["email_message"], list):
             submission["email_message"] = []
-
+ 
         # Append new email message entry
         submission["email_message"].append(email_log)
-
-        
+ 
+       
         # SAVE MESSAGE IN DATABASE
         form_obj.submission_data = submission
         form_obj.save()
@@ -554,16 +633,15 @@ class ComposeMailAPIView(APIView):
             message=message,
             attachment_file=attachment_file,
         )
-
+ 
         return Response({"message": "Email sent successfully!"})
+   
     
     
     def put(self, request, pk):
 
         cc_emails = request.data.get("cc_emails", "")
         message = request.data.get("message")
-        attachment_file = request.FILES.get("attachment") 
-
 
         # Build CC list
         cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
@@ -595,55 +673,152 @@ class ComposeMailAPIView(APIView):
             role=role,
             phone=submission.get("Phone")
         )
-        saved_file_path = None
 
-        if attachment_file:
-            fs = FileSystemStorage(location='media/email_attachments/')
-            saved_name = fs.save(attachment_file.name, attachment_file)
-            saved_file_path = f"email_attachments/{saved_name}"  # relative path to media
-
-        email_log = {
-            "message": message,
-            "cc": cc_list,
-            "attachments": [saved_file_path] if saved_file_path else []
-        }
-        if "email_message" not in submission or not isinstance(submission["email_message"], list):
-            submission["email_message"] = []
-
-        # Append new email message entry
-        submission["email_message"].append(email_log)
-        
-        # SAVE MESSAGE IN DATABASE
-        form_obj.submission_data = submission
-        form_obj.save()
         # Send email
         send_composed_email(
             to_email=email,
             cc_emails=cc_list,
             subject=subject,
-            message=message,
-            attachment_file=attachment_file,
+            message=message
         )
 
         return Response({"message": "Email updated successfully "})
     
-    def get(self, request, pk):
 
-        # Fetch FormData using pk
+
+from .resume_parser import parse_resume
+
+class ResumeParseAPIView(APIView):
+    def post(self, request):
+        f = request.FILES.get("resume")
+        if not f:
+            return Response({"error": "Please upload a file under the key 'resume'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        max_mb = 10
+        if getattr(f, "size", 0) > max_mb * 1024 * 1024:
+            return Response({"error": f"File too large. Max {max_mb} MB allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            form_obj = FormData.objects.get(pk=pk)
-        except FormData.DoesNotExist:
-            return Response({"status": "error", "message": "Record not found"}, status=404)
+            result = parse_resume(f, f.name)
+            return Response({"success": True, "response": result}, status=status.HTTP_200_OK)
+        except Exception as exc:
+            return Response({"success": False, "error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        submission = form_obj.submission_data
+from .csv_reader import get_or_create_job_by_title
+from create_job.models import add_job
+from django.db import transaction
+from .csv_reader import read_uploaded_file
 
-        # Get email message list (or empty list if not exists)
-        email_logs = submission.get("email_message", [])
+BATCH_SIZE = 100
+
+
+class UploadCandidatesCSVAPIView(APIView):
+    def post(self, request):
+        csv_file = request.FILES.get("file")
+        if not csv_file:
+            return Response({"error": "Please upload a file under key 'file'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not (csv_file.name.lower().endswith(".csv") or csv_file.name.lower().endswith(".xlsx") or csv_file.name.lower().endswith(".xls")):
+            return Response({"error": "Only CSV, XLSX, and XLS files allowed."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            rows = read_uploaded_file(csv_file)
+        except Exception as e:
+            return Response({"error": f"Error reading CSV: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        created = 0
+        errors = []
+
+        job_cache = {}
+
+        batch_objects = []
+
+        for idx, row in enumerate(rows, start=2):
+            try:
+                job_title = (row.get("Job Title") or row.get("job title") or "").strip()
+
+                if job_title not in job_cache:
+                    job_cache[job_title] = get_or_create_job_by_title(job_title)
+
+                job_instance = job_cache[job_title]
+
+                submission_json = {
+                    k: v for k, v in row.items()
+                    if k.lower() != "job title"
+                }
+
+                submission_json["Role_Type"] = job_title
+                submission_json["job_id"] = job_instance.job_id if job_instance else None
+                submission_json["job_title"] = job_instance.title if job_instance else None
+
+                batch_objects.append(
+                    FormData(
+                        form_name="gxi_form",
+                        submission_data=submission_json
+                    )
+                )
+
+                if len(batch_objects) >= BATCH_SIZE:
+                    FormData.objects.bulk_create(batch_objects)
+                    created += len(batch_objects)
+                    batch_objects = []
+
+            except Exception as e:
+                errors.append(f"Row {idx}: {str(e)}")
+
+        if batch_objects:
+            FormData.objects.bulk_create(batch_objects)
+            created += len(batch_objects)
 
         return Response({
-            "status": "success",
-            "email_messages": email_logs
-        })
+            "message": "File uploaded successfully!",
+            "total_rows": len(rows),
+            "created": created,
+            "failed": len(errors),
+            "errors": errors[:20],
+        }, status=status.HTTP_200_OK)
+
+
+
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Count, Q
+from django.core.cache import cache   # optional: requires Django cache configured
+
+class RoleTypeCountAPIView(APIView):
+    CACHE_KEY = "role_type_counts_v1"
+    CACHE_TIMEOUT = 600
+
+    def get(self, request):
+        try:
+            cached = cache.get(self.CACHE_KEY)
+            if cached is not None:
+                return Response({"status": "success", "role_type_counts": cached}, status=status.HTTP_200_OK)
+            qs = (
+                FormData.objects
+                .exclude(Q(submission_data__Role_Type__isnull=True) | Q(submission_data__Role_Type__exact=''))
+                .values('submission_data__Role_Type')
+                .annotate(count=Count('id'))
+            )
+
+            role_type_counts = {item['submission_data__Role_Type']: item['count'] for item in qs}
+
+            # Optional: cache the result
+            try:
+                cache.set(self.CACHE_KEY, role_type_counts, timeout=self.CACHE_TIMEOUT)
+            except Exception:
+                # caching is best-effort — don't fail the request if cache isn't configured
+                pass
+
+            return Response({"status": "success", "role_type_counts": role_type_counts}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception("RoleTypeCountAPIView error: %s", str(e))
+            return Response({"status": "error", "message": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         
 def fetch_emails_and_store():
     import imaplib
@@ -722,51 +897,10 @@ class FetchIncomingEmails(APIView):
         success = fetch_emails_and_store()
         return Response({"status": "ok", "message": "Emails fetched successfully"})
     
-class HREmailSender:
-
-    def __init__(self, user):
-        if user.role != UserProfile.ROLE_HR:
-            raise PermissionError("Only HR can send emails")
-
-        if not hasattr(user, "email_config"):
-            raise ValueError("HR has not configured email settings")
-
-        self.user = user
-        self.config = user.email_config
-
-        self.connection = get_connection(
-            host=settings.EMAIL_HOST,
-            port=settings.EMAIL_PORT,
-            username=self.config.email_host_user,
-            password=self.config.email_host_password,
-            use_tls=settings.EMAIL_USE_TLS,
-            use_ssl=getattr(settings, "EMAIL_USE_SSL", False)
-        )
-
-    def send_composed(self, to_email, cc_emails, subject, message, attachment_file=None):
-        email = EmailMessage(
-            subject=subject,
-            body=message,
-            from_email=self.config.email_host_user,
-            to=[to_email],
-            cc=cc_emails,
-            connection=self.connection,
-        )
-
-        email.content_subtype = "html"
-
-        if attachment_file:
-            email.attach(
-                attachment_file.name,
-                attachment_file.read(),
-                attachment_file.content_type
-            )
-
-        return email.send()
+    
+    
     
 class HRComposeMailAPIView(APIView):
-    # permission_classes = [IsAuthenticated]
-
     def post(self, request, pk):
         user = request.user
 
@@ -910,7 +1044,7 @@ def fetch_dynamic_emails(imap_host, imap_port, email_user, email_pass, candidate
     except Exception as e:
         print("IMAP Error:", e)
         return []
-
+    
     
 class FetchIncomingMailAPIView(APIView):
     def get(self, request, pk):

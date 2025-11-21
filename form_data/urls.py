@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import FormDataAPIView  , ScheduleInterviewAPIView, SendWhatsappMessageAPIView, SendSessionMessageAPIView,ComposeMailAPIView,FetchIncomingEmails,HRComposeMailAPIView,FetchIncomingMailAPIView,ChatHistoryAPIView
+from .views import *
 from .meetviews import GoogleAuthInit, GoogleAuthCallback, GoogleTokenStatus, CreateMeetView
 # from .cvviews import GenerateCVAPIView
 

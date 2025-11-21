@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job
+from .models import Skills, Department, Job_types, Location, Teams, add_job, Question
 from superadmin.models import UserProfile  # role constants
 
 User = get_user_model()
@@ -240,3 +240,17 @@ class addjobSerializer(serializers.ModelSerializer):
         # keep job_id immutable
         validated_data.pop("job_id", None)
         return super().update(instance, validated_data)
+    
+
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = [
+            "id",
+            "label",
+            "question_type",
+            "options",
+            "required",
+            "order",
+            "section"
+        ]    
