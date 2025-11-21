@@ -211,4 +211,12 @@ class hiring_managerUser(UserProfile):
     def save(self, *args, **kwargs):
         self.role = UserProfile.Hiring_Manager
         super().save(*args, **kwargs)
+   
+class EmailConfig(models.Model):
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name="email_config")
+    email_host_user = models.EmailField()                            # Dynamic user email 
+    email_host_password = models.CharField(max_length=500)  # Encrypted dynamic password
+
+    def __str__(self):
+        return f"Email Config for {self.user.email}"
 

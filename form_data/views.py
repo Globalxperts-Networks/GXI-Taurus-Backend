@@ -12,9 +12,14 @@ import requests
 from functools import reduce
 from operator import or_
 from django.template.loader import render_to_string
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage,get_connection
 from django.utils.html import strip_tags
 from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+from superadmin.models import UserProfile
+from imapclient import IMAPClient
+import pyzmail
+from datetime import datetime
 
 class FormDataAPIView(APIView):
     
@@ -136,9 +141,6 @@ class FormDataAPIView(APIView):
     # ================================
     # POST METHOD
     # ================================
-    
-    
-    
 
     def post(self, request):
         serializer = FormDataSerializer(data=request.data)
@@ -529,6 +531,7 @@ class ComposeMailAPIView(APIView):
         # ⭐ UPDATE submission_data JSON STRUCTURE
         # =============================================
         email_log = {
+            "subject": subject,
             "message": message,
             "cc": cc_list,
             "attachments": [saved_file_path] if saved_file_path else []
@@ -641,3 +644,342 @@ class ComposeMailAPIView(APIView):
             "status": "success",
             "email_messages": email_logs
         })
+        
+def fetch_emails_and_store():
+    import imaplib
+    import email
+    from email.header import decode_header
+    from django.core.files.storage import FileSystemStorage
+    from .models import FormData
+
+    imap = imaplib.IMAP4_SSL("outlook.office365.com")
+    imap.login("noreply@gxinetworks.com", "August@082024")
+
+    imap.select("INBOX")
+    status, messages = imap.search(None, "UNSEEN")
+    email_ids = messages[0].split()
+
+    for mail_id in email_ids:
+        status, msg_data = imap.fetch(mail_id, "(RFC822)")
+        msg = email.message_from_bytes(msg_data[0][1])
+
+        # Decode subject safely
+        raw_subject, enc = decode_header(msg["Subject"])[0]
+        if isinstance(raw_subject, bytes):
+            subject = raw_subject.decode(enc or "utf-8", errors="ignore")
+        else:
+            subject = raw_subject
+
+        sender = msg.get("From")
+        body = ""
+        saved_attachments = []
+
+        # Walk through email parts
+        for part in msg.walk():
+
+            # TEXT BODY
+            if part.get_content_type() == "text/plain":
+                body += part.get_payload(decode=True).decode(errors="ignore")
+
+            # ATTACHMENTS
+            if part.get("Content-Disposition"):
+                filename = part.get_filename()
+                file_data = part.get_payload(decode=True)
+
+                # Save to media
+                fs = FileSystemStorage(location="media/incoming_attachments/")
+                saved_name = fs.save(filename, file_data)
+                saved_path = "incoming_attachments/" + saved_name
+
+                saved_attachments.append(saved_path)
+
+        # 🟢 Find correct FormData based on email sender
+        try:
+            form_obj = FormData.objects.get(submission_data__Email__icontains=sender)
+        except:
+            form_obj = FormData.objects.first() 
+
+        # 🟢 Append email inside JSON
+        incoming = form_obj.submission_data.get("incoming_emails", [])
+
+        incoming.append({
+            "subject": subject,
+            "sender": sender,
+            "body": body,
+            "attachments": saved_attachments
+        })
+
+        form_obj.submission_data["incoming_emails"] = incoming
+        form_obj.save()
+
+    imap.close()
+    imap.logout()
+
+    return True
+
+class FetchIncomingEmails(APIView):
+    def get(self, request):
+        success = fetch_emails_and_store()
+        return Response({"status": "ok", "message": "Emails fetched successfully"})
+    
+class HREmailSender:
+
+    def __init__(self, user):
+        if user.role != UserProfile.ROLE_HR:
+            raise PermissionError("Only HR can send emails")
+
+        if not hasattr(user, "email_config"):
+            raise ValueError("HR has not configured email settings")
+
+        self.user = user
+        self.config = user.email_config
+
+        self.connection = get_connection(
+            host=settings.EMAIL_HOST,
+            port=settings.EMAIL_PORT,
+            username=self.config.email_host_user,
+            password=self.config.email_host_password,
+            use_tls=settings.EMAIL_USE_TLS,
+            use_ssl=getattr(settings, "EMAIL_USE_SSL", False)
+        )
+
+    def send_composed(self, to_email, cc_emails, subject, message, attachment_file=None):
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=self.config.email_host_user,
+            to=[to_email],
+            cc=cc_emails,
+            connection=self.connection,
+        )
+
+        email.content_subtype = "html"
+
+        if attachment_file:
+            email.attach(
+                attachment_file.name,
+                attachment_file.read(),
+                attachment_file.content_type
+            )
+
+        return email.send()
+    
+class HRComposeMailAPIView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+
+        # Only HR allowed
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can send emails"}, status=403)
+
+        cc_emails = request.data.get("cc_emails", "")
+        message = request.data.get("message")
+        attachment_file = request.FILES.get("attachment")
+
+        if not message:
+            return Response({"error": "message is required"}, status=400)
+
+        # Convert comma-separated CC into list
+        cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+
+        # ============================
+        # Fetch Candidate FormData
+        # ============================
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Record not found"}, status=404)
+
+        submission = form_obj.submission_data
+        candidate_email = submission.get("Email")
+        role = submission.get("Role_Type", "Not Provided")
+        current_status = submission.get("status", "Unknown")
+
+        # Subject
+        subject = f"Role: {role} | Status: {current_status}"
+
+        # Replace placeholders dynamically
+        message = message.format(
+            candidate_name=submission.get("Name"),
+            status=current_status,
+            phone=submission.get("Phone"),
+            role=submission.get("Role_Type")
+        )
+
+        # ============================
+        # Save Attachment to MEDIA
+        # ============================
+        saved_file_path = None
+
+        if attachment_file:
+            fs = FileSystemStorage(location='media/email_attachments/')
+            saved_name = fs.save(attachment_file.name, attachment_file)
+            saved_file_path = f"email_attachments/{saved_name}"
+
+        # ============================
+        # SAVE EMAIL LOG IN DB
+        # ============================
+        email_log = {
+            "message": message,
+            "cc": cc_list,
+            "attachments": [saved_file_path] if saved_file_path else []
+        }
+
+        if "email_message" not in submission or not isinstance(submission["email_message"], list):
+            submission["email_message"] = []
+
+        submission["email_message"].append(email_log)
+
+        form_obj.submission_data = submission
+        form_obj.save()
+
+        # ============================
+        # SEND EMAIL USING HR SMTP
+        # ============================
+        try:
+            sender = HREmailSender(user)
+            sender.send_composed(
+                to_email=candidate_email,
+                cc_emails=cc_list,
+                subject=subject,
+                message=message,
+                attachment_file=attachment_file
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+        return Response({"message": "Email sent successfully!"})
+    
+def extract_clean_body(msg):
+    # Prefer plain text part
+    if msg.text_part:
+        try:
+            return msg.text_part.get_payload().decode(msg.text_part.charset)
+        except:
+            pass
+
+    # If no text version, remove HTML tags
+    if msg.html_part:
+        try:
+            import re
+            html = msg.html_part.get_payload().decode(msg.html_part.charset)
+            clean_text = re.sub('<[^<]+?>', '', html)  # remove HTML tags
+            return clean_text.strip()
+        except:
+            return ""
+    
+    return ""
+
+
+def fetch_dynamic_emails(imap_host, imap_port, email_user, email_pass, candidate_email=None):
+    try:
+        with IMAPClient(imap_host, port=imap_port, ssl=True, timeout=10) as client:
+
+            client.login(email_user, email_pass)
+            client.select_folder("INBOX")
+
+            # ⭐ Always fetch all emails from candidate (read + unread)
+            if candidate_email:
+                messages = client.search(["FROM", candidate_email])
+            else:
+                messages = client.search(["ALL"])
+
+            # ⭐ Limit for speed
+            messages = messages[-20:]
+
+            email_list = []
+
+            for msgid, data in client.fetch(messages, ["BODY[]", "ENVELOPE"]).items():
+                msg = pyzmail.PyzMessage.factory(data[b"BODY[]"])
+
+                from_email = msg.get_addresses("from")[0][1]
+                subject = msg.get_subject()
+                body = extract_clean_body(msg)
+
+                email_list.append({
+                    "from": from_email,
+                    "subject": subject,
+                    "body": body
+                })
+
+            return email_list
+
+    except Exception as e:
+        print("IMAP Error:", e)
+        return []
+
+    
+class FetchIncomingMailAPIView(APIView):
+    def get(self, request, pk):
+        user = request.user
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can fetch incoming emails"}, status=403)
+
+        config = user.email_config
+
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Record not found"}, status=404)
+
+        candidate_email = form_obj.submission_data.get("Email")
+
+        emails = fetch_dynamic_emails(
+            imap_host=settings.IMAP_DEFAULT_HOST,
+            imap_port=settings.IMAP_DEFAULT_PORT,
+            email_user=config.email_host_user,
+            email_pass=config.email_host_password,
+            candidate_email=candidate_email
+        )
+
+        return Response({"emails": emails})
+    
+class ChatHistoryAPIView(APIView):
+    def get(self, request, pk):
+        user = request.user
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can view chat"}, status=403)
+
+        # Candidate FormData
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Candidate not found"}, status=404)
+
+        submission = form_obj.submission_data
+        candidate_email = submission.get("Email")
+
+        # 1️⃣ Sent Messages (DB)
+        sent_messages = submission.get("email_message", [])
+
+        # Force type=sent and remove timestamp if exists
+        clean_sent = []
+        for msg in sent_messages:
+            msg.pop("timestamp", None)
+            msg["type"] = "sent"
+            clean_sent.append(msg)
+
+        # 2️⃣ Received Messages
+        config = user.email_config
+        received_messages = fetch_dynamic_emails(
+            imap_host=settings.IMAP_DEFAULT_HOST,
+            imap_port=settings.IMAP_DEFAULT_PORT,
+            email_user=config.email_host_user,
+            email_pass=config.email_host_password,
+            candidate_email=candidate_email
+        )
+
+        # Force type=received and remove timestamp
+        clean_received = []
+        for msg in received_messages:
+            msg.pop("timestamp", None)
+            msg["type"] = "received"
+            clean_received.append(msg)
+
+        # 3️⃣ Merge directly WITHOUT sorting
+        full_chat = clean_sent + clean_received
+
+        return Response({"chat": full_chat})
