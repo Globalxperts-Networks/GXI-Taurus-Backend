@@ -1,4 +1,4 @@
-# graph_service.py
+# graph_service.py  (full file to use — you can replace or merge with your uploaded file)
 import time
 import requests
 import base64
@@ -33,6 +33,9 @@ class GraphService:
         _token_cache["expiry_time"] = time.time() + int(expires_in)
 
     def get_app_token(self, force_refresh=False):
+        """
+        Acquire app-only token (client_credentials). Uses simple in-process cache.
+        """
         if not force_refresh and self._is_token_valid():
             return _token_cache["access_token"]
 
@@ -57,6 +60,10 @@ class GraphService:
             raise Exception(f"No access_token: {body}")
         self._store_token(token, expires_in)
         return token
+
+    # backward-compatible alias (some of your code called graph.get_token())
+    def get_token(self, force_refresh=False):
+        return self.get_app_token(force_refresh=force_refresh)
 
     def decode_jwt_no_verify(self, token):
         try:
@@ -95,19 +102,17 @@ class GraphService:
             raise GraphAPIError(resp.status_code, body)
         return resp.json()
 
-    # ---- Create online meeting (delegated) ----
-    def create_online_meeting_delegated(self, delegated_token: str, start_dt: str, end_dt: str, subject: str = None, meeting_options: dict = None):
+    # ---- Create calendar event for user (app-only) ----
+    def create_event_for_user_app(self, token: str, user_identifier: str, event_payload: dict):
         """
-        Create online meeting using a delegated token (on-behalf-of a signed-in user).
-        POST /me/onlineMeetings
+        Create a calendar event for a user using app-only token.
+        POST /users/{user_identifier}/events
+        user_identifier: userPrincipalName (email) or user object id
+        event_payload: the JSON body for the event (e.g. the payload you gave)
         """
-        url = f"{self.GRAPH_BASE}/me/onlineMeetings"
-        headers = {"Authorization": f"Bearer {delegated_token}", "Content-Type": "application/json"}
-        payload = {"startDateTime": start_dt, "endDateTime": end_dt, "subject": subject or "Scheduled via API"}
-        if meeting_options:
-            payload.update(meeting_options)
-
-        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        url = f"{self.GRAPH_BASE}/users/{user_identifier}/events"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, json=event_payload, timeout=20)
         if resp.status_code >= 400:
             try:
                 body = resp.json()
@@ -115,3 +120,5 @@ class GraphService:
                 body = resp.text
             raise GraphAPIError(resp.status_code, body)
         return resp.json()
+
+    # You can add other helpers like get_teams, get_team_members etc. as needed.
