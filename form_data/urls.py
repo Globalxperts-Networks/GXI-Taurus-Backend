@@ -16,11 +16,8 @@ urlpatterns = [
     path("send-session-message/<int:form_id>/", SendSessionMessageAPIView.as_view(), name="send_session_message"),
     path("compose-email/<int:pk>/", ComposeMailAPIView.as_view()),
     path('update-email/<int:pk>/', ComposeMailAPIView.as_view(),),
-    path("email-messages/<int:pk>/", ComposeMailAPIView.as_view()),
-    path("fetch-incoming-emails/", FetchIncomingEmails.as_view()),
-    path("hr/compose-email/<int:pk>/", HRComposeMailAPIView.as_view(), name="hr-compose-email"),
-    path("hr/incoming-mails/<int:pk>/", FetchIncomingMailAPIView.as_view(), name="hr-incoming-mails"),
-    path("hr/chat-history/<int:pk>/", ChatHistoryAPIView.as_view(), name="chat-histor"),
-
+    path("resume/parse/", ResumeParseAPIView.as_view(), name="resume_parse"),
+    path("candidates/upload-csv/", UploadCandidatesCSVAPIView.as_view()),
+    path("role_type_counts/", RoleTypeCountAPIView.as_view(), name="role-type-counts"),
     # path("formdata/<int:pk>/generate-cv/", GenerateCVAPIView.as_view(), name="generate-cv"),
 ]

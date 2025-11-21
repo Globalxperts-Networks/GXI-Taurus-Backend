@@ -11,17 +11,6 @@ from .models import Meeting
 logger = logging.getLogger(__name__)
 
 class CreateOnlineMeetingAPIView(APIView):
-    """
-    POST: create a Teams online meeting for the specified organizer (app-only).
-    Body example:
-    {
-      "organizer": "jai.jha@gxinetworks.com",
-      "start": "2025-11-26T10:00:00Z",
-      "end": "2025-11-26T11:00:00Z",
-      "subject": "Interview",
-      "meeting_options": { ... }   # optional: pass extra Graph fields
-    }
-    """
     def post(self, request):
         try:
             organizer = request.data.get("organizer")
@@ -60,22 +49,6 @@ class CreateOnlineMeetingAPIView(APIView):
 
 
 class CreateEventAPIView(APIView):
-    """
-    POST: create a calendar event for a user (using your provided payload)
-    Example body (your original payload):
-    {
-      "organizer": "jai.jha@gxinetworks.com",
-      "event": {
-        "subject": "Testing Meeting",
-        "body": {"contentType":"HTML","content":"Interview details"},
-        "start": {"dateTime":"2025-11-26T10:00:00","timeZone":"UTC"},
-        "end":   {"dateTime":"2025-11-26T11:00:00","timeZone":"UTC"},
-        "isOnlineMeeting": true,
-        "onlineMeetingProvider": "teamsForBusiness",
-        "attendees": [{"emailAddress":{"address":"sudhanshu@gxinetworks.com","name":"Candidate"},"type":"required"}]
-      }
-    }
-    """
     def post(self, request):
         try:
             organizer = request.data.get("organizer")
@@ -117,4 +90,35 @@ class CreateEventAPIView(APIView):
             return Response({"status": "error", "graph_status": gee.status_code, "graph_body": gee.body}, status=status.HTTP_502_BAD_GATEWAY)
         except Exception as exc:
             logger.exception("Unexpected error creating event: %s", exc)
+            return Response({"status": "error", "message": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class teams_user(APIView):
+    def get(self, request):
+        graph = GraphService()
+        try:
+            token = graph.get_app_token()
+
+            # read query params (safe parsing)
+            top_q = request.query_params.get("top", "200")
+            try:
+                top = int(top_q)
+            except (TypeError, ValueError):
+                top = 200
+
+            fetch_all_q = request.query_params.get("fetch_all", "false").lower()
+            fetch_all = fetch_all_q in ("1", "true", "yes", "y")
+
+            user_info = graph.user_list(token=token, top=top, fetch_all=fetch_all)
+
+            return Response({"status": "success", "user": user_info}, status=status.HTTP_200_OK)
+
+        except GraphAPIError as gee:
+            logger.exception("Graph API error fetching user info")
+            return Response(
+                {"status": "error", "graph_status": gee.status_code, "graph_body": gee.body},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception as exc:
+            logger.exception("Unexpected error fetching user info: %s", exc)
             return Response({"status": "error", "message": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
