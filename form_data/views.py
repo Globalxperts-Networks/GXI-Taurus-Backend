@@ -21,6 +21,7 @@ from .models import FormData
 from .serializers import FormDataSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import FileSystemStorage
+from django.core.mail import EmailMessage,get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -540,7 +541,7 @@ class SendSessionMessageAPIView(APIView):
             status=status.HTTP_200_OK if result["success"] else status.HTTP_502_BAD_GATEWAY,
         )
 
-def send_composed_email(to_email, cc_emails, subject, message):
+def send_composed_email(to_email, cc_emails, subject, message,attachment_file=None): 
     try:
         email = EmailMessage(
             subject=subject,
@@ -549,15 +550,17 @@ def send_composed_email(to_email, cc_emails, subject, message):
             to=[to_email],
             cc=cc_emails,
         )
-
+ 
         email.content_subtype = "html"   # if message contains HTML tags
+        if attachment_file:
+            email.attach(attachment_file.name, attachment_file.read(), attachment_file.content_type)
+ 
         email.send()
         return True
-
+ 
     except Exception as e:
         print(f"⚠️ Email sending failed: {e}")
         return False
-
 
 class ComposeMailAPIView(APIView):
     def post(self, request, pk):
@@ -625,6 +628,7 @@ class ComposeMailAPIView(APIView):
         )
  
         return Response({"message": "Email sent successfully!"})
+   
     
     
     def put(self, request, pk):
