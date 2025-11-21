@@ -22,7 +22,5 @@ urlpatterns = [
     path("hr/incoming-mails/<int:pk>/", FetchIncomingMailAPIView.as_view(), name="hr-incoming-mails"),
     path("hr/chat-history/<int:pk>/", ChatHistoryAPIView.as_view(), name="chat-histor"),
 
-
-
     # path("formdata/<int:pk>/generate-cv/", GenerateCVAPIView.as_view(), name="generate-cv"),
 ]
