@@ -27,16 +27,6 @@ logger = logging.getLogger(__name__)
 
 class FormDataAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    """
-    APIView for FormData CRUD with status-transition logic and email notifications.
-
-    Key improvements:
-    - Handles submission_data when sent as JSON string or dict.
-    - Uses transaction.atomic in POST/PUT where data is saved.
-    - Ensures note updates are allowed regardless of status.
-    - Uses settings.DEFAULT_FROM_EMAIL for email sending.
-    """
-
     def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
                           interview_date=None, interview_time=None, joining_date=None, is_new_candidate=False):
         if not candidate_email:
@@ -74,9 +64,6 @@ class FormDataAPIView(APIView):
             # Log error; do not raise to keep API flow stable
             logger.exception("Failed to send status email to %s: %s", candidate_email, str(e))
 
-    # ================================
-    # GET METHOD
-    # ================================
     def get(self, request, pk=None):
         try:
             if pk:
@@ -105,13 +92,26 @@ class FormDataAPIView(APIView):
                     Q(submission_data__icontains=search_query)
                 )
 
+            # -------------------------------------
+            # ROLE TYPE FILTER (CASE-INSENSITIVE)
+            # -------------------------------------
             if role_type_param:
                 role_types = [rt.strip() for rt in role_type_param.split(',') if rt.strip()]
+
                 if role_types:
                     if role_type_exact:
-                        conds = [Q(**{"submission_data__Role_Type__iexact": rt}) for rt in role_types]
+                        # CASE-INSENSITIVE EXACT MATCH
+                        conds = [
+                            Q(submission_data__Role_Type__iexact=rt)
+                            for rt in role_types
+                        ]
                     else:
-                        conds = [Q(**{"submission_data__Role_Type__icontains": rt}) for rt in role_types]
+                        # CASE-INSENSITIVE CONTAINS MATCH
+                        conds = [
+                            Q(submission_data__Role_Type__icontains=rt)
+                            for rt in role_types
+                        ]
+
                     forms = forms.filter(reduce(or_, conds))
 
             valid_sort_fields = ['form_name', 'submitted_at']
@@ -145,7 +145,6 @@ class FormDataAPIView(APIView):
             logger.exception("GET FormData error: %s", str(e))
             return Response({"status": "error", "message": f"An error occurred: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
     # ================================
     # POST METHOD
     # ================================
@@ -767,3 +766,44 @@ class UploadCandidatesCSVAPIView(APIView):
             "failed": len(errors),
             "errors": errors[:20],
         }, status=status.HTTP_200_OK)
+
+
+
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Count, Q
+from django.core.cache import cache   # optional: requires Django cache configured
+
+class RoleTypeCountAPIView(APIView):
+    CACHE_KEY = "role_type_counts_v1"
+    CACHE_TIMEOUT = 600
+
+    def get(self, request):
+        try:
+            cached = cache.get(self.CACHE_KEY)
+            if cached is not None:
+                return Response({"status": "success", "role_type_counts": cached}, status=status.HTTP_200_OK)
+            qs = (
+                FormData.objects
+                .exclude(Q(submission_data__Role_Type__isnull=True) | Q(submission_data__Role_Type__exact=''))
+                .values('submission_data__Role_Type')
+                .annotate(count=Count('id'))
+            )
+
+            role_type_counts = {item['submission_data__Role_Type']: item['count'] for item in qs}
+
+            # Optional: cache the result
+            try:
+                cache.set(self.CACHE_KEY, role_type_counts, timeout=self.CACHE_TIMEOUT)
+            except Exception:
+                # caching is best-effort — don't fail the request if cache isn't configured
+                pass
+
+            return Response({"status": "success", "role_type_counts": role_type_counts}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception("RoleTypeCountAPIView error: %s", str(e))
+            return Response({"status": "error", "message": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

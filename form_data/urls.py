@@ -18,5 +18,6 @@ urlpatterns = [
     path('update-email/<int:pk>/', ComposeMailAPIView.as_view(),),
     path("resume/parse/", ResumeParseAPIView.as_view(), name="resume_parse"),
     path("candidates/upload-csv/", UploadCandidatesCSVAPIView.as_view()),
+    path("role_type_counts/", RoleTypeCountAPIView.as_view(), name="role-type-counts"),
     # path("formdata/<int:pk>/generate-cv/", GenerateCVAPIView.as_view(), name="generate-cv"),
 ]
