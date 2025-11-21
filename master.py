@@ -1,30 +1,14 @@
-import gspread
-from google.oauth2.service_account import Credentials
+import msal
 
-# Path to your service account key
-SERVICE_ACCOUNT_FILE = "gxihiring-d7185498ec0f.json"
-
-# Define scopes
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-
-# Authenticate
-creds = Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
-    scopes=SCOPES
+app = msal.ConfidentialClientApplication(
+    "e96d9338-9d3e-4733-98cd-d2d600f45abf",
+    client_credential="ZZw8Q~S6e_oKWvIBTyde7kAUURJCCeNf2zTLxcs2",
+    authority="https://login.microsoftonline.com/aadc5d1f-19d3-4ced-a0e5-0aae419ec4d2"
 )
 
-client = gspread.authorize(creds)
+result = app.acquire_token_for_client(
+    scopes=["https://graph.microsoft.com/.default"]
+)
 
-# Google Sheet ID
-SHEET_ID = "16irAL1EdtAZm-DBCA-ffy-FM0giEkrDtBNIHxu4Y4r4"
-
-# Open the sheet
-sheet = client.open_by_key(SHEET_ID)
-worksheet = sheet.sheet1  # First sheet
-
-# Fetch all responses
-responses = worksheet.get_all_records()
-
-# Print responses
-for response in responses:
-    print(response)
+access_token = result.get("access_token")
+print(access_token)

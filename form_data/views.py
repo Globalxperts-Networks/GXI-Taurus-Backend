@@ -2,6 +2,7 @@ import json
 import logging
 from functools import reduce
 from operator import or_
+import json
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -149,14 +150,26 @@ class FormDataAPIView(APIView):
     # ================================
     def post(self, request):
         submission_data_raw = request.data.get("submission_data")
+       
 
-        try:
-            submission_data = json.loads(submission_data_raw)
-        except:
+        # Convert JSON string from multipart form
+        if isinstance(submission_data_raw, str):
+            try:
+                submission_data = json.loads(submission_data_raw)
+            except Exception as e:
+                return Response(
+                    {"error": "Invalid JSON in submission_data", "details": str(e)},
+                    status=400
+                )
+        elif isinstance(submission_data_raw, dict):
+            submission_data = submission_data_raw
+        else:
             submission_data = {}
 
         data = request.data.copy()
-        data["submission_data"] = submission_data
+
+        # 🔥 Convert dict → JSON string for serializer
+        data["submission_data"] = json.dumps(submission_data)
 
         serializer = FormDataSerializer(data=data)
 
@@ -167,16 +180,16 @@ class FormDataAPIView(APIView):
             ).exists()
 
             form_obj = serializer.save()
+            submission = form_obj.submission_data  # Python dict (auto parsed)
 
-            # Send email
             self.send_status_email(
-                candidate_email=submission_data.get("Email"),
-                candidate_name=submission_data.get("Name"),
-                current_status=submission_data.get("status", "Applied"),
-                phase=submission_data.get("phase"),
-                interview_date=submission_data.get("interview_time"),
-                interview_time=submission_data.get("interview_time"),
-                joining_date=submission_data.get("joining_date"),
+                candidate_email=submission.get("Email"),
+                candidate_name=submission.get("Name"),
+                current_status=submission.get("status", "Applied"),
+                phase=submission.get("phase"),
+                interview_date=submission.get("interview_time"),
+                interview_time=submission.get("interview_time"),
+                joining_date=submission.get("joining_date"),
                 is_new_candidate=is_new
             )
 
