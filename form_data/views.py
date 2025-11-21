@@ -811,3 +811,270 @@ class RoleTypeCountAPIView(APIView):
         except Exception as e:
             logger.exception("RoleTypeCountAPIView error: %s", str(e))
             return Response({"status": "error", "message": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class FetchIncomingEmails(APIView):
+    def get(self, request):
+        success = fetch_emails_and_store()
+        return Response({"status": "ok", "message": "Emails fetched successfully"})
+    
+class HREmailSender:
+
+    def __init__(self, user):
+        if user.role != UserProfile.ROLE_HR:
+            raise PermissionError("Only HR can send emails")
+
+        if not hasattr(user, "email_config"):
+            raise ValueError("HR has not configured email settings")
+
+        self.user = user
+        self.config = user.email_config
+
+        self.connection = get_connection(
+            host=settings.EMAIL_HOST,
+            port=settings.EMAIL_PORT,
+            username=self.config.email_host_user,
+            password=self.config.email_host_password,
+            use_tls=settings.EMAIL_USE_TLS,
+            use_ssl=getattr(settings, "EMAIL_USE_SSL", False)
+        )
+
+    def send_composed(self, to_email, cc_emails, subject, message, attachment_file=None):
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=self.config.email_host_user,
+            to=[to_email],
+            cc=cc_emails,
+            connection=self.connection,
+        )
+
+        email.content_subtype = "html"
+
+        if attachment_file:
+            email.attach(
+                attachment_file.name,
+                attachment_file.read(),
+                attachment_file.content_type
+            )
+
+        return email.send()
+    
+class HRComposeMailAPIView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+
+        # Only HR allowed
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can send emails"}, status=403)
+
+        cc_emails = request.data.get("cc_emails", "")
+        message = request.data.get("message")
+        attachment_file = request.FILES.get("attachment")
+
+        if not message:
+            return Response({"error": "message is required"}, status=400)
+
+        # Convert comma-separated CC into list
+        cc_list = [email.strip() for email in cc_emails.split(",") if email.strip()]
+
+        # ============================
+        # Fetch Candidate FormData
+        # ============================
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Record not found"}, status=404)
+
+        submission = form_obj.submission_data
+        candidate_email = submission.get("Email")
+        role = submission.get("Role_Type", "Not Provided")
+        current_status = submission.get("status", "Unknown")
+
+        # Subject
+        subject = f"Role: {role} | Status: {current_status}"
+
+        # Replace placeholders dynamically
+        message = message.format(
+            candidate_name=submission.get("Name"),
+            status=current_status,
+            phone=submission.get("Phone"),
+            role=submission.get("Role_Type")
+        )
+
+        # ============================
+        # Save Attachment to MEDIA
+        # ============================
+        saved_file_path = None
+
+        if attachment_file:
+            fs = FileSystemStorage(location='media/email_attachments/')
+            saved_name = fs.save(attachment_file.name, attachment_file)
+            saved_file_path = f"email_attachments/{saved_name}"
+
+        # ============================
+        # SAVE EMAIL LOG IN DB
+        # ============================
+        email_log = {
+            "message": message,
+            "cc": cc_list,
+            "attachments": [saved_file_path] if saved_file_path else []
+        }
+
+        if "email_message" not in submission or not isinstance(submission["email_message"], list):
+            submission["email_message"] = []
+
+        submission["email_message"].append(email_log)
+
+        form_obj.submission_data = submission
+        form_obj.save()
+
+        # ============================
+        # SEND EMAIL USING HR SMTP
+        # ============================
+        try:
+            sender = HREmailSender(user)
+            sender.send_composed(
+                to_email=candidate_email,
+                cc_emails=cc_list,
+                subject=subject,
+                message=message,
+                attachment_file=attachment_file
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+        return Response({"message": "Email sent successfully!"})
+    
+def extract_clean_body(msg):
+    # Prefer plain text part
+    if msg.text_part:
+        try:
+            return msg.text_part.get_payload().decode(msg.text_part.charset)
+        except:
+            pass
+
+    # If no text version, remove HTML tags
+    if msg.html_part:
+        try:
+            import re
+            html = msg.html_part.get_payload().decode(msg.html_part.charset)
+            clean_text = re.sub('<[^<]+?>', '', html)  # remove HTML tags
+            return clean_text.strip()
+        except:
+            return ""
+    
+    return ""
+
+
+def fetch_dynamic_emails(imap_host, imap_port, email_user, email_pass, candidate_email=None):
+    try:
+        with IMAPClient(imap_host, port=imap_port, ssl=True, timeout=10) as client:
+
+            client.login(email_user, email_pass)
+            client.select_folder("INBOX")
+
+            # ⭐ Always fetch all emails from candidate (read + unread)
+            if candidate_email:
+                messages = client.search(["FROM", candidate_email])
+            else:
+                messages = client.search(["ALL"])
+
+            # ⭐ Limit for speed
+            messages = messages[-20:]
+
+            email_list = []
+
+            for msgid, data in client.fetch(messages, ["BODY[]", "ENVELOPE"]).items():
+                msg = pyzmail.PyzMessage.factory(data[b"BODY[]"])
+
+                from_email = msg.get_addresses("from")[0][1]
+                subject = msg.get_subject()
+                body = extract_clean_body(msg)
+
+                email_list.append({
+                    "from": from_email,
+                    "subject": subject,
+                    "body": body
+                })
+
+            return email_list
+
+    except Exception as e:
+        print("IMAP Error:", e)
+        return []
+
+    
+class FetchIncomingMailAPIView(APIView):
+    def get(self, request, pk):
+        user = request.user
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can fetch incoming emails"}, status=403)
+
+        config = user.email_config
+
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Record not found"}, status=404)
+
+        candidate_email = form_obj.submission_data.get("Email")
+
+        emails = fetch_dynamic_emails(
+            imap_host=settings.IMAP_DEFAULT_HOST,
+            imap_port=settings.IMAP_DEFAULT_PORT,
+            email_user=config.email_host_user,
+            email_pass=config.email_host_password,
+            candidate_email=candidate_email
+        )
+
+        return Response({"emails": emails})
+    
+class ChatHistoryAPIView(APIView):
+    def get(self, request, pk):
+        user = request.user
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can view chat"}, status=403)
+
+        # Candidate FormData
+        try:
+            form_obj = FormData.objects.get(pk=pk)
+        except FormData.DoesNotExist:
+            return Response({"error": "Candidate not found"}, status=404)
+
+        submission = form_obj.submission_data
+        candidate_email = submission.get("Email")
+
+        # 1️⃣ Sent Messages (DB)
+        sent_messages = submission.get("email_message", [])
+
+        # Force type=sent and remove timestamp if exists
+        clean_sent = []
+        for msg in sent_messages:
+            msg.pop("timestamp", None)
+            msg["type"] = "sent"
+            clean_sent.append(msg)
+
+        # 2️⃣ Received Messages
+        config = user.email_config
+        received_messages = fetch_dynamic_emails(
+            imap_host=settings.IMAP_DEFAULT_HOST,
+            imap_port=settings.IMAP_DEFAULT_PORT,
+            email_user=config.email_host_user,
+            email_pass=config.email_host_password,
+            candidate_email=candidate_email
+        )
+
+        # Force type=received and remove timestamp
+        clean_received = []
+        for msg in received_messages:
+            msg.pop("timestamp", None)
+            msg["type"] = "received"
+            clean_received.append(msg)
+
+        # 3️⃣ Merge directly WITHOUT sorting
+        full_chat = clean_sent + clean_received
+
+        return Response({"chat": full_chat})
