@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import Q  # ✅ use Q from here
 
-from .models import UserProfile
+from .models import UserProfile,EmailConfig
 from .serializers import UserSerializer, UserListSerializer
 from .utils import send_otp, verify_otp, EmailService
 
@@ -335,3 +335,31 @@ class ManagerTeamListAPIView(APIView):
             },
             status=200,
         )
+
+
+class SaveHREmailConfigView(APIView):
+    def post(self, request):
+        user = request.user
+        # Only HR role allowed
+        if user.role != UserProfile.ROLE_HR:
+            return Response({"error": "Only HR can save email configuration"}, status=403)
+
+        email_user = request.data.get("email_host_user")
+        email_pass = request.data.get("email_host_password")
+
+        if not email_user or not email_pass:
+            return Response(
+                {"error": "email_host_user and email_host_password are required."},
+                status=400
+            )
+
+        # Save/update config
+        config, _ = EmailConfig.objects.update_or_create(
+            user=request.user,
+            defaults={
+                "email_host_user": email_user,
+                "email_host_password": email_pass,  # setter encrypts it
+            }
+        )
+
+        return Response({"message": "Email config saved successfully"})

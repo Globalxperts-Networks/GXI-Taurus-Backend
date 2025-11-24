@@ -2,7 +2,7 @@
 from django.urls import path
 from .views import (
     CustomerViews, LoginCustomer, CustomerManageViews,
-    OTPView, VerifyOTP, ForgotPasswordAPIView , ManagerTeamListAPIView
+    OTPView, VerifyOTP, ForgotPasswordAPIView , ManagerTeamListAPIView,SaveHREmailConfigView
 )
 
 urlpatterns = [
@@ -14,4 +14,5 @@ urlpatterns = [
     path('verify-otp/', VerifyOTP.as_view(), name='verify-otp'),
     path('forgot-password/', ForgotPasswordAPIView.as_view(), name='forgot-password'),
     path('manager_list/', ManagerTeamListAPIView.as_view(), name='manager-list'),
+    path('hr-Email-config/', SaveHREmailConfigView.as_view(), name='hr-Email-config'),
 ]
