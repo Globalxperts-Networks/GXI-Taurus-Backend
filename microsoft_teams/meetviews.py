@@ -101,11 +101,11 @@ class teams_user(APIView):
             token = graph.get_app_token()
 
             # read query params (safe parsing)
-            top_q = request.query_params.get("top", "200")
+            top_q = request.query_params.get("top", "400")
             try:
                 top = int(top_q)
             except (TypeError, ValueError):
-                top = 200
+                top = 400
 
             fetch_all_q = request.query_params.get("fetch_all", "false").lower()
             fetch_all = fetch_all_q in ("1", "true", "yes", "y")
