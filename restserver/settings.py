@@ -299,6 +299,7 @@ WATI_API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYmY3Yjg5OC1hY
 WATI_API_ENDPOINT = "https://live-server.wati.io/388428/api/v1/sendSessionMessage"
 TENANT_ID = "388428"
 
+GEMINI_API_KEY='AIzaSyCMhtlXaLSAAXqrefkEg8rockgbL5G_Xjw'
 
 
 # MICROSOFT_CONFIG = {
