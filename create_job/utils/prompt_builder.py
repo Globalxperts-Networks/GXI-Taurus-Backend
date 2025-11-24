@@ -6,6 +6,8 @@ def build_resume_prompt(text):
         "name": "",
         "email": "",
         "phone": "",
+        "linkedin_url": "",
+        "github_url": "",
         "education": [
             {"degree": "", "university": "", "year": ""}
         ],
