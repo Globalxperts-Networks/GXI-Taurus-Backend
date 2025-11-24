@@ -7,6 +7,7 @@ from django.conf import settings
 
 from .graph_service import GraphService, GraphAPIError
 from .models import Meeting
+from .serializers import MeetingSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -122,3 +123,11 @@ class teams_user(APIView):
         except Exception as exc:
             logger.exception("Unexpected error fetching user info: %s", exc)
             return Response({"status": "error", "message": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class meeting_list(APIView):
+    def get(self, request):
+        meetings = Meeting.objects.all().order_by('-created_at')[:50]
+        serializer = MeetingSerializer(meetings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
