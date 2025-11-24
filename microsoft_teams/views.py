@@ -11,19 +11,9 @@ from .models import Team, Member
 logger = logging.getLogger(__name__)
 
 class SyncTeamsMembersAPIView(APIView):
-    """
-    Sync Teams and Members from Microsoft Graph into local Team/Member models.
-    """
-
     def get(self, request):
         try:
-            # Option A: let GraphService read settings internally (recommended)
             graph = GraphService()
-
-            # Option B: explicit (also supported)
-            # graph = GraphService(settings.AZURE_TENANT_ID, settings.AZURE_CLIENT_ID, settings.AZURE_CLIENT_SECRET)
-
-            # Get token (cached by GraphService)
             token = graph.get_token()
 
             # Debug: log token claims (safe to log claims; never log client_secret)
