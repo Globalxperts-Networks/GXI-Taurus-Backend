@@ -5,6 +5,12 @@ from django.shortcuts import get_object_or_404
 from .models import Skills
 from .serializers import  SkillsSerializer
 
+from rest_framework.parsers import MultiPartParser
+from .utils.extractors import extract_text_from_pdf, extract_text_from_docx
+from .utils.parser import parse_resume
+import json
+from .utils.prompt_builder import build_resume_prompt
+from .utils.llm_gemini import call_gemini_llm
 
 # -------------------- SKILLS API --------------------
 class SkillsAPIView(APIView):
@@ -61,3 +67,72 @@ class JobQuestionsAPIView(APIView):
         serializer = QuestionSerializer(questions, many=True)
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
  
+class ResumeParserView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        file = request.FILES.get("resume")
+        if not file:
+            return Response({"error": "No file uploaded"}, status=400)
+
+        ext = file.name.split(".")[-1].lower()
+        if ext == "pdf":
+            text, diag = extract_text_from_pdf(file)
+            parsed = {"raw_text": text[:4000]}
+        elif ext in ("docx", "doc"):
+            text, diag = extract_text_from_docx(file)
+            parsed = {"raw_text": text[:4000]}
+        else:
+            return Response({"error": "Unsupported file type"}, status=400)
+        
+        parsed_data = parse_resume(text)
+
+        return Response({"response": parsed_data})
+
+class ResumeAIParserView(APIView):
+    def post(self, request):
+        file = request.FILES.get("resume")
+        if not file:
+            return Response({"error": "No file uploaded"}, status=400)
+
+        ext = file.name.split(".")[-1].lower()
+        file.seek(0)
+
+        if ext == "pdf":
+            text, diag = extract_text_from_pdf(file)
+        elif ext == "docx":
+            text, diag = extract_text_from_docx(file)
+        else:
+            return Response({"error": "Only PDF and DOCX supported"}, status=400)
+
+        if not isinstance(text, str) or not text.strip():
+            return Response({"error": "Could not extract text"}, status=500)
+
+        prompt = build_resume_prompt(text)
+
+        raw_output = call_gemini_llm(prompt)
+        print("Gemini Raw Output:", raw_output)
+
+
+        if isinstance(raw_output, dict) and "error" in raw_output:
+            return Response({"error": raw_output["error"]}, status=500)
+
+        raw_text = raw_output  # Gemini returns a plain string
+
+        cleaned = (
+            raw_text.replace("```json", "")
+                    .replace("```", "")
+                    .strip()
+        )
+
+        try:
+            parsed_json = json.loads(cleaned)
+        except Exception as e:
+            return Response({
+                "error": "Failed to parse JSON",
+                "exception": str(e),
+                "raw_output": raw_text
+            }, status=500)
+
+        return Response({"parsed": parsed_json}, status=200)
+

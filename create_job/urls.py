@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SkillsAPIView, JobQuestionsAPIView
+from .views import SkillsAPIView, JobQuestionsAPIView, ResumeParserView, ResumeAIParserView
 from .departmentviews import DepartmentAPIView
 from .jobtypesviews import jobtypesAPIView
 from .locationViews import LocationAPIView
@@ -27,4 +27,6 @@ urlpatterns = [
     path("addjob/", AddJobAPIView.as_view()),
     path("addjob/<int:pk>/", AddJobAPIView.as_view()),
     path('jobs/<int:job_id>/questions/', JobQuestionsAPIView.as_view(), name="job-questions"),
+    path('parse-resume/', ResumeParserView.as_view()),
+    path("resume-ai-parse/", ResumeAIParserView.as_view()),
 ]
