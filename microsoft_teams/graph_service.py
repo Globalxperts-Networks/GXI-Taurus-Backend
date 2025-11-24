@@ -6,6 +6,7 @@ import json
 from django.conf import settings
 from typing import Optional, Dict, Any, List
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -164,3 +165,95 @@ class GraphService:
 
             return {"value": users}
         return data
+
+
+    def reschedule_event(self, token: str, organizer_user_id: str, event_id: str, start_iso: str, end_iso: str, subject: Optional[str] = None):
+        """
+        PATCH an existing calendar event for a user. Returns:
+        - dict (updated event) if Graph returns it (200),
+        - None if Graph returns 204 (no content) but the update succeeded.
+        """
+        url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/events/{event_id}"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        payload = {
+            "start": {"dateTime": start_iso, "timeZone": "UTC"},
+            "end": {"dateTime": end_iso, "timeZone": "UTC"},
+        }
+        if subject:
+            payload["subject"] = subject
+
+        resp = requests.patch(url, headers=headers, json=payload, timeout=20)
+
+        if resp.status_code >= 400:
+            # Try to include JSON body if present
+            try:
+                body = resp.json()
+            except Exception:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+
+        # Success: either 200 with body or 204 no content
+        if resp.status_code == 204:
+            return None
+        try:
+            return resp.json()
+        except ValueError:
+            return None
+
+
+    def get_event_for_user(self, token: str, organizer_user_id: str, event_id: str) -> dict:
+        """
+        GET the event object for a user. Returns the event JSON; raises GraphAPIError on non-2xx.
+        """
+        url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/events/{event_id}"
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        resp = requests.get(url, headers=headers, timeout=20)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except Exception:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        return resp.json()
+
+
+    def reschedule_online_meeting(self, token: str, organizer_user_id: str, meeting_id: str, start_iso: str, end_iso: str, subject: Optional[str] = None):
+        """
+        PATCH an onlineMeeting resource. Graph may accept updates on onlineMeetings depending on tenant/APIs.
+        Returns dict if returned, or None if 204.
+        """
+        url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/onlineMeetings/{meeting_id}"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        payload = {
+            "startDateTime": start_iso,
+            "endDateTime": end_iso
+        }
+        if subject:
+            payload["subject"] = subject
+
+        resp = requests.patch(url, headers=headers, json=payload, timeout=20)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except Exception:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        if resp.status_code == 204:
+            return None
+        try:
+            return resp.json()
+        except ValueError:
+            return None
+
+
+    def get_online_meeting(self, token: str, organizer_user_id: str, meeting_id: str) -> dict:
+        url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/onlineMeetings/{meeting_id}"
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        resp = requests.get(url, headers=headers, timeout=20)
+        if resp.status_code >= 400:
+            try:
+                body = resp.json()
+            except Exception:
+                body = resp.text
+            raise GraphAPIError(resp.status_code, body)
+        return resp.json()
