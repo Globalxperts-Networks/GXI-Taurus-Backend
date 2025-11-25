@@ -8,7 +8,7 @@ from google import genai
 import os
 
 def call_gemini_llm(prompt):
-    api_key = settings.GEMINI_API_KEY
+    api_key = os.getenv("GEMINI_API_KEY")
 
     try:
         client = genai.Client(api_key=api_key)
