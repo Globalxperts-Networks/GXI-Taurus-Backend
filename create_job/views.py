@@ -141,17 +141,17 @@ class ResumeAIParserView(APIView):
 
 class CountryStateListAPI(APIView):
     def get(self, request):
-        search_query = request.GET.get('search', None)
+        exact_name = request.GET.get("country_name")
 
-        countries = Country.objects.prefetch_related('states').all()
+        countries = Country.objects.prefetch_related("states")
 
-        if search_query:
-            countries = countries.filter(Q(country_name__icontains=search_query) |Q(states__state_name__icontains=search_query)).distinct()
-        serializer = CountryWithStatesSerializer(countries, many=True).data
-        if search_query:
-            for country in serializer:
-                country["states"] = [
-                    st for st in country["states"]
-                    if search_query.lower() in st["state_name"].lower()
-                ] or country["states"]
-        return Response(serializer)
+        # Apply exact (case-insensitive) match
+        if exact_name:
+            countries = countries.filter(country_name__iexact=exact_name)
+
+        serializer = CountryWithStatesSerializer(countries, many=True)
+
+        return Response({
+            "status": "success",
+            "data": serializer.data
+        })
