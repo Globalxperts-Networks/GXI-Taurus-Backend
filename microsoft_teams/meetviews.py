@@ -429,3 +429,39 @@ class RescheduleMeetingAPIView(APIView):
             return Response({"status": "warning", "message": "rescheduled in Graph but failed saving locally", "graph_updated": updated_obj, "save_error": str(e)}, status=status.HTTP_200_OK)
 
         return Response({"status": "ok", "graph_updated": updated_obj}, status=status.HTTP_200_OK)
+    
+
+
+
+class MeetingRecordingFetchAPIView(APIView):
+    def get(self, request):
+        organizer_email = request.query_params.get("organizer_email")
+        meeting_id = request.query_params.get("meeting_id")
+        if not organizer_email or not meeting_id:
+            return Response({"error": "organizer_email & meeting_id required"}, status=400)
+
+        graph = GraphService()
+        auth_hdr = request.headers.get("Authorization", "")
+        if auth_hdr and auth_hdr.lower().startswith("bearer "):
+            token = auth_hdr.split(" ", 1)[1].strip()
+        else:
+            try:
+                token = graph.get_app_token()
+            except Exception as e:
+                return Response({"error": "Failed to get app token", "details": str(e)}, status=500)
+
+        try:
+            data = graph.call_recording(token=token, organizer_email=organizer_email, meeting_id=meeting_id)
+            return Response({"status": "success", "data": data})
+        except GraphAPIError as ge:
+            body = getattr(ge, "body", None) or str(ge)
+            if isinstance(body, dict) and body.get("error", {}).get("code", "").lower().startswith("invalidauth"):
+                return Response({
+                    "status": "error",
+                    "graph_status": getattr(ge, "status_code", 502),
+                    "graph_body": body,
+                    "hint": "Token rejected. Check client secret / certificate validity, ensure token 'aud' == 'https://graph.microsoft.com', and that token is not expired. Try get_app_token(force_refresh=True)."
+                }, status=502)
+            return Response({"status": "error", "graph_status": getattr(ge, "status_code", 502), "graph_body": body}, status=502)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=500)

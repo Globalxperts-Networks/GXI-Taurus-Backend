@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import user_list
-from .meetviews import  CreateOnlineMeetingAPIView, CreateEventAPIView , teams_user , meeting_list , RescheduleMeetingAPIView
+from .meetviews import  CreateOnlineMeetingAPIView, CreateEventAPIView , teams_user , meeting_list , RescheduleMeetingAPIView  , MeetingRecordingFetchAPIView
 
 urlpatterns = [
     path("user_list/", user_list.as_view()),
@@ -9,5 +9,6 @@ urlpatterns = [
     path('teams_user/', teams_user.as_view(), name='teams-user'),
     path('meetings/', meeting_list.as_view(), name='meeting-list'),
     path('reschedule_meeting/<int:meeting_id>/', RescheduleMeetingAPIView.as_view(), name='reschedule-meeting'),
+    path('meeting_recording/', MeetingRecordingFetchAPIView.as_view(), name='meeting-recording'),
 
 ]
