@@ -188,6 +188,18 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql', 
+#         'NAME': 'gxi_beckend',                          
+#         'USER': 'postgres',                
+#         'PASSWORD': '1@Aachal',                
+#         'HOST': '127.0.0.1',                  
+#         'PORT': '5432', 
+
+#     }
+# }
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',

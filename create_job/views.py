@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import Skills
-from .serializers import  SkillsSerializer
+from .models import Skills,Country
+from .serializers import  SkillsSerializer,CountryWithStatesSerializer
 
 
 # -------------------- SKILLS API --------------------
@@ -61,3 +61,8 @@ class JobQuestionsAPIView(APIView):
         serializer = QuestionSerializer(questions, many=True)
         return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
  
+class CountryStateListAPI(APIView):
+    def get(self, request):
+        countries = Country.objects.prefetch_related('states').all()
+        serializer = CountryWithStatesSerializer(countries, many=True)
+        return Response(serializer.data)

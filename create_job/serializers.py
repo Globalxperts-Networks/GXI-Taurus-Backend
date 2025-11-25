@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job, Question
+from .models import Skills, Department, Job_types, Location, Teams, add_job, Question,State,Country
 from superadmin.models import UserProfile  # role constants
 
 User = get_user_model()
@@ -254,3 +254,16 @@ class QuestionSerializer(serializers.ModelSerializer):
             "order",
             "section"
         ]    
+        
+class StateListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = State
+        fields = ['id', 'state_name', 'short_name']   # added short_name
+
+
+class CountryWithStatesSerializer(serializers.ModelSerializer):
+    states = StateListSerializer(many=True)
+
+    class Meta:
+        model = Country
+        fields = ['id', 'country_code', 'country_name', 'short_name', 'states'] 

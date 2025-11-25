@@ -1,0 +1,1294 @@
+[
+  {
+    "model": "create_job.State",
+    "pk": 1,
+    "fields": {
+      "state_name": "Andhra Pradesh",
+      "country": 98,
+      "short_name": "AP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 2,
+    "fields": {
+      "state_name": "Arunachal Pradesh",
+      "country": 98,
+      "short_name": "AR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 3,
+    "fields": {
+      "state_name": "Assam",
+      "country": 98,
+      "short_name": "AS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 4,
+    "fields": {
+      "state_name": "Bihar",
+      "country": 98,
+      "short_name": "BR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 5,
+    "fields": {
+      "state_name": "Chhattisgarh",
+      "country": 98,
+      "short_name": "CG"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 6,
+    "fields": {
+      "state_name": "Goa",
+      "country": 98,
+      "short_name": "GA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 7,
+    "fields": {
+      "state_name": "Gujarat",
+      "country": 98,
+      "short_name": "GJ"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 8,
+    "fields": {
+      "state_name": "Haryana",
+      "country": 98,
+      "short_name": "HR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 9,
+    "fields": {
+      "state_name": "Himachal Pradesh",
+      "country": 98,
+      "short_name": "HP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 10,
+    "fields": {
+      "state_name": "Jharkhand",
+      "country": 98,
+      "short_name": "JH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 11,
+    "fields": {
+      "state_name": "Karnataka",
+      "country": 98,
+      "short_name": "KA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 12,
+    "fields": {
+      "state_name": "Kerala",
+      "country": 98,
+      "short_name": "KL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 13,
+    "fields": {
+      "state_name": "Madhya Pradesh",
+      "country": 98,
+      "short_name": "MP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 14,
+    "fields": {
+      "state_name": "Maharashtra",
+      "country": 98,
+      "short_name": "MH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 15,
+    "fields": {
+      "state_name": "Manipur",
+      "country": 98,
+      "short_name": "MN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 16,
+    "fields": {
+      "state_name": "Meghalaya",
+      "country": 98,
+      "short_name": "ML"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 17,
+    "fields": {
+      "state_name": "Mizoram",
+      "country": 98,
+      "short_name": "MZ"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 18,
+    "fields": {
+      "state_name": "Nagaland",
+      "country": 98,
+      "short_name": "NL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 19,
+    "fields": {
+      "state_name": "Odisha",
+      "country": 98,
+      "short_name": "OD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 20,
+    "fields": {
+      "state_name": "Punjab",
+      "country": 98,
+      "short_name": "PB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 21,
+    "fields": {
+      "state_name": "Rajasthan",
+      "country": 98,
+      "short_name": "RJ"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 22,
+    "fields": {
+      "state_name": "Sikkim",
+      "country": 98,
+      "short_name": "SK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 23,
+    "fields": {
+      "state_name": "Tamil Nadu",
+      "country": 98,
+      "short_name": "TN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 24,
+    "fields": {
+      "state_name": "Telangana",
+      "country": 98,
+      "short_name": "TS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 25,
+    "fields": {
+      "state_name": "Tripura",
+      "country": 98,
+      "short_name": "TR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 26,
+    "fields": {
+      "state_name": "Uttar Pradesh",
+      "country": 98,
+      "short_name": "UP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 27,
+    "fields": {
+      "state_name": "Uttarakhand",
+      "country": 98,
+      "short_name": "UK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 28,
+    "fields": {
+      "state_name": "West Bengal",
+      "country": 98,
+      "short_name": "WB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 29,
+    "fields": {
+      "state_name": "Andaman and Nicobar Islands",
+      "country": 98,
+      "short_name": "AN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 30,
+    "fields": {
+      "state_name": "Chandigarh",
+      "country": 98,
+      "short_name": "CH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 31,
+    "fields": {
+      "state_name": "Dadra and Nagar Haveli and Daman and Diu",
+      "country": 98,
+      "short_name": "DN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 32,
+    "fields": {
+      "state_name": "Delhi",
+      "country": 98,
+      "short_name": "DL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 33,
+    "fields": {
+      "state_name": "Jammu and Kashmir",
+      "country": 98,
+      "short_name": "JK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 34,
+    "fields": {
+      "state_name": "Ladakh",
+      "country": 98,
+      "short_name": "LA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 35,
+    "fields": {
+      "state_name": "Lakshadweep",
+      "country": 98,
+      "short_name": "LD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 36,
+    "fields": {
+      "state_name": "Puducherry",
+      "country": 98,
+      "short_name": "PY"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 37,
+    "fields": {
+      "state_name": "Alabama",
+      "country": 229,
+      "short_name": "AL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 38,
+    "fields": {
+      "state_name": "Alaska",
+      "country": 229,
+      "short_name": "AK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 39,
+    "fields": {
+      "state_name": "Arizona",
+      "country": 229,
+      "short_name": "AZ"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 40,
+    "fields": {
+      "state_name": "Arkansas",
+      "country": 229,
+      "short_name": "AR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 41,
+    "fields": {
+      "state_name": "California",
+      "country": 229,
+      "short_name": "CA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 42,
+    "fields": {
+      "state_name": "Colorado",
+      "country": 229,
+      "short_name": "CO"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 43,
+    "fields": {
+      "state_name": "Connecticut",
+      "country": 229,
+      "short_name": "CT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 44,
+    "fields": {
+      "state_name": "Delaware",
+      "country": 229,
+      "short_name": "DE"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 45,
+    "fields": {
+      "state_name": "Florida",
+      "country": 229,
+      "short_name": "FL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 46,
+    "fields": {
+      "state_name": "Georgia",
+      "country": 229,
+      "short_name": "GA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 47,
+    "fields": {
+      "state_name": "Hawaii",
+      "country": 229,
+      "short_name": "HI"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 48,
+    "fields": {
+      "state_name": "Idaho",
+      "country": 229,
+      "short_name": "ID"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 49,
+    "fields": {
+      "state_name": "Illinois",
+      "country": 229,
+      "short_name": "IL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 50,
+    "fields": {
+      "state_name": "Indiana",
+      "country": 229,
+      "short_name": "IN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 51,
+    "fields": {
+      "state_name": "Iowa",
+      "country": 229,
+      "short_name": "IA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 52,
+    "fields": {
+      "state_name": "Kansas",
+      "country": 229,
+      "short_name": "KS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 53,
+    "fields": {
+      "state_name": "Kentucky",
+      "country": 229,
+      "short_name": "KY"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 54,
+    "fields": {
+      "state_name": "Louisiana",
+      "country": 229,
+      "short_name": "LA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 55,
+    "fields": {
+      "state_name": "Maine",
+      "country": 229,
+      "short_name": "ME"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 56,
+    "fields": {
+      "state_name": "Maryland",
+      "country": 229,
+      "short_name": "MD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 57,
+    "fields": {
+      "state_name": "Massachusetts",
+      "country": 229,
+      "short_name": "MA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 58,
+    "fields": {
+      "state_name": "Michigan",
+      "country": 229,
+      "short_name": "MI"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 59,
+    "fields": {
+      "state_name": "Minnesota",
+      "country": 229,
+      "short_name": "MN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 60,
+    "fields": {
+      "state_name": "Mississippi",
+      "country": 229,
+      "short_name": "MS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 61,
+    "fields": {
+      "state_name": "Missouri",
+      "country": 229,
+      "short_name": "MO"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 62,
+    "fields": {
+      "state_name": "Montana",
+      "country": 229,
+      "short_name": "MT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 63,
+    "fields": {
+      "state_name": "Nebraska",
+      "country": 229,
+      "short_name": "NE"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 64,
+    "fields": {
+      "state_name": "Nevada",
+      "country": 229,
+      "short_name": "NV"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 65,
+    "fields": {
+      "state_name": "New Hampshire",
+      "country": 229,
+      "short_name": "NH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 66,
+    "fields": {
+      "state_name": "New Jersey",
+      "country": 229,
+      "short_name": "NJ"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 67,
+    "fields": {
+      "state_name": "New Mexico",
+      "country": 229,
+      "short_name": "NM"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 68,
+    "fields": {
+      "state_name": "New York",
+      "country": 229,
+      "short_name": "NY"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 69,
+    "fields": {
+      "state_name": "North Carolina",
+      "country": 229,
+      "short_name": "NC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 70,
+    "fields": {
+      "state_name": "North Dakota",
+      "country": 229,
+      "short_name": "ND"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 71,
+    "fields": {
+      "state_name": "Ohio",
+      "country": 229,
+      "short_name": "OH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 72,
+    "fields": {
+      "state_name": "Oklahoma",
+      "country": 229,
+      "short_name": "OK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 73,
+    "fields": {
+      "state_name": "Oregon",
+      "country": 229,
+      "short_name": "OR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 74,
+    "fields": {
+      "state_name": "Pennsylvania",
+      "country": 229,
+      "short_name": "PA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 75,
+    "fields": {
+      "state_name": "Rhode Island",
+      "country": 229,
+      "short_name": "RI"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 76,
+    "fields": {
+      "state_name": "South Carolina",
+      "country": 229,
+      "short_name": "SC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 77,
+    "fields": {
+      "state_name": "South Dakota",
+      "country": 229,
+      "short_name": "SD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 78,
+    "fields": {
+      "state_name": "Tennessee",
+      "country": 229,
+      "short_name": "TN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 79,
+    "fields": {
+      "state_name": "Texas",
+      "country": 229,
+      "short_name": "TX"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 80,
+    "fields": {
+      "state_name": "Utah",
+      "country": 229,
+      "short_name": "UT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 81,
+    "fields": {
+      "state_name": "Vermont",
+      "country": 229,
+      "short_name": "VT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 82,
+    "fields": {
+      "state_name": "Virginia",
+      "country": 229,
+      "short_name": "VA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 83,
+    "fields": {
+      "state_name": "Washington",
+      "country": 229,
+      "short_name": "WA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 84,
+    "fields": {
+      "state_name": "West Virginia",
+      "country": 229,
+      "short_name": "WV"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 85,
+    "fields": {
+      "state_name": "Wisconsin",
+      "country": 229,
+      "short_name": "WI"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 86,
+    "fields": {
+      "state_name": "Wyoming",
+      "country": 229,
+      "short_name": "WY"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 87,
+    "fields": {
+      "state_name": "District of Columbia",
+      "country": 229,
+      "short_name": "DC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 88,
+    "fields": {
+      "state_name": "England",
+      "country": 228,
+      "short_name": "ENG"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 89,
+    "fields": {
+      "state_name": "Scotland",
+      "country": 228,
+      "short_name": "SCT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 90,
+    "fields": {
+      "state_name": "Wales",
+      "country": 228,
+      "short_name": "WLS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 91,
+    "fields": {
+      "state_name": "Northern Ireland",
+      "country": 228,
+      "short_name": "NIR"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 92,
+    "fields": {
+      "state_name": "Ontario",
+      "country": 38,
+      "short_name": "ON"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 93,
+    "fields": {
+      "state_name": "Quebec",
+      "country": 38,
+      "short_name": "QC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 94,
+    "fields": {
+      "state_name": "Nova Scotia",
+      "country": 38,
+      "short_name": "NS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 95,
+    "fields": {
+      "state_name": "New Brunswick",
+      "country": 38,
+      "short_name": "NB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 96,
+    "fields": {
+      "state_name": "Manitoba",
+      "country": 38,
+      "short_name": "MB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 97,
+    "fields": {
+      "state_name": "British Columbia",
+      "country": 38,
+      "short_name": "BC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 98,
+    "fields": {
+      "state_name": "Prince Edward Island",
+      "country": 38,
+      "short_name": "PE"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 99,
+    "fields": {
+      "state_name": "Saskatchewan",
+      "country": 38,
+      "short_name": "SK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 100,
+    "fields": {
+      "state_name": "Alberta",
+      "country": 38,
+      "short_name": "AB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 101,
+    "fields": {
+      "state_name": "Newfoundland and Labrador",
+      "country": 38,
+      "short_name": "NL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 102,
+    "fields": {
+      "state_name": "Northwest Territories",
+      "country": 38,
+      "short_name": "NT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 103,
+    "fields": {
+      "state_name": "Yukon",
+      "country": 38,
+      "short_name": "YT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 104,
+    "fields": {
+      "state_name": "Nunavut",
+      "country": 38,
+      "short_name": "NU"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 105,
+    "fields": {
+      "state_name": "New South Wales",
+      "country": 13,
+      "short_name": "NSW"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 106,
+    "fields": {
+      "state_name": "Queensland",
+      "country": 13,
+      "short_name": "QLD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 107,
+    "fields": {
+      "state_name": "South Australia",
+      "country": 13,
+      "short_name": "SA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 108,
+    "fields": {
+      "state_name": "Tasmania",
+      "country": 13,
+      "short_name": "TAS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 109,
+    "fields": {
+      "state_name": "Victoria",
+      "country": 13,
+      "short_name": "VIC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 110,
+    "fields": {
+      "state_name": "Western Australia",
+      "country": 13,
+      "short_name": "WA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 111,
+    "fields": {
+      "state_name": "Australian Capital Territory",
+      "country": 13,
+      "short_name": "ACT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 112,
+    "fields": {
+      "state_name": "Northern Territory",
+      "country": 13,
+      "short_name": "NT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 113,
+    "fields": {
+      "state_name": "Northland",
+      "country": 151,
+      "short_name": "NTL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 114,
+    "fields": {
+      "state_name": "Auckland",
+      "country": 151,
+      "short_name": "AUK"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 115,
+    "fields": {
+      "state_name": "Waikato",
+      "country": 151,
+      "short_name": "WKO"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 116,
+    "fields": {
+      "state_name": "Bay of Plenty",
+      "country": 151,
+      "short_name": "BOP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 117,
+    "fields": {
+      "state_name": "Gisborne",
+      "country": 151,
+      "short_name": "GIS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 118,
+    "fields": {
+      "state_name": "Hawke's Bay",
+      "country": 151,
+      "short_name": "HKB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 119,
+    "fields": {
+      "state_name": "Taranaki",
+      "country": 151,
+      "short_name": "TKI"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 120,
+    "fields": {
+      "state_name": "Manawat\u016b-Whanganui",
+      "country": 151,
+      "short_name": "MWT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 121,
+    "fields": {
+      "state_name": "Wellington",
+      "country": 151,
+      "short_name": "WGN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 122,
+    "fields": {
+      "state_name": "Tasman",
+      "country": 151,
+      "short_name": "TAS"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 123,
+    "fields": {
+      "state_name": "Nelson",
+      "country": 151,
+      "short_name": "NSN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 124,
+    "fields": {
+      "state_name": "Marlborough",
+      "country": 151,
+      "short_name": "MBH"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 125,
+    "fields": {
+      "state_name": "West Coast",
+      "country": 151,
+      "short_name": "WTC"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 126,
+    "fields": {
+      "state_name": "Canterbury",
+      "country": 151,
+      "short_name": "CAN"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 127,
+    "fields": {
+      "state_name": "Otago",
+      "country": 151,
+      "short_name": "OTA"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 128,
+    "fields": {
+      "state_name": "Southland",
+      "country": 151,
+      "short_name": "STL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 129,
+    "fields": {
+      "state_name": "Punjab",
+      "country": 161,
+      "short_name": "PB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 130,
+    "fields": {
+      "state_name": "Sindh",
+      "country": 161,
+      "short_name": "SD"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 131,
+    "fields": {
+      "state_name": "Khyber Pakhtunkhwa",
+      "country": 161,
+      "short_name": "KP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 132,
+    "fields": {
+      "state_name": "Balochistan",
+      "country": 161,
+      "short_name": "BL"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 133,
+    "fields": {
+      "state_name": "Islamabad Capital Territory",
+      "country": 161,
+      "short_name": "ICT"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 134,
+    "fields": {
+      "state_name": "Gilgit-Baltistan",
+      "country": 161,
+      "short_name": "GB"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 135,
+    "fields": {
+      "state_name": "Koshi Province",
+      "country": 148,
+      "short_name": "KP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 136,
+    "fields": {
+      "state_name": "Madhesh Province",
+      "country": 148,
+      "short_name": "MP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 137,
+    "fields": {
+      "state_name": "Bagmati Province",
+      "country": 148,
+      "short_name": "BP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 138,
+    "fields": {
+      "state_name": "Gandaki Province",
+      "country": 148,
+      "short_name": "GP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 139,
+    "fields": {
+      "state_name": "Lumbini Province",
+      "country": 148,
+      "short_name": "LP"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 140,
+    "fields": {
+      "state_name": "Karnali Province",
+      "country": 148,
+      "short_name": "KP2"
+    }
+  },
+  {
+    "model": "create_job.State",
+    "pk": 141,
+    "fields": {
+      "state_name": "Sudurpashchim Province",
+      "country": 148,
+      "short_name": "SP"
+    }
+  },
+  {"model": "create_job.State","pk": 142,"fields": {"state_name": "Stockholm County","country": 208,"short_name": "AB"}},
+  {"model": "create_job.State","pk": 143,"fields": {"state_name": "Uppsala County","country": 208,"short_name": "C"}},
+  {"model": "create_job.State","pk": 144,"fields": {"state_name": "Södermanland County","country": 208,"short_name": "D"}},
+  {"model": "create_job.State","pk": 145,"fields": {"state_name": "Östergötland County","country": 208,"short_name": "E"}},
+  {"model": "create_job.State","pk": 146,"fields": {"state_name": "Jönköping County","country": 208,"short_name": "F"}},
+  {"model": "create_job.State","pk": 147,"fields": {"state_name": "Kronoberg County","country": 208,"short_name": "G"}},
+  {"model": "create_job.State","pk": 148,"fields": {"state_name": "Kalmar County","country": 208,"short_name": "H"}},
+  {"model": "create_job.State","pk": 149,"fields": {"state_name": "Gotland County","country": 208,"short_name": "I"}},
+  {"model": "create_job.State","pk": 150,"fields": {"state_name": "Blekinge County","country": 208,"short_name": "K"}},
+  {"model": "create_job.State","pk": 151,"fields": {"state_name": "Skåne County","country": 208,"short_name": "M"}},
+  {"model": "create_job.State","pk": 152,"fields": {"state_name": "Halland County","country": 208,"short_name": "N"}},
+  {"model": "create_job.State","pk": 153,"fields": {"state_name": "Västra Götaland County","country": 208,"short_name": "O"}},
+  {"model": "create_job.State","pk": 154,"fields": {"state_name": "Värmland County","country": 208,"short_name": "S"}},
+  {"model": "create_job.State","pk": 155,"fields": {"state_name": "Örebro County","country": 208,"short_name": "T"}},
+  {"model": "create_job.State","pk": 156,"fields": {"state_name": "Västmanland County","country": 208,"short_name": "U"}},
+  {"model": "create_job.State","pk": 157,"fields": {"state_name": "Dalarna County","country": 208,"short_name": "W"}},
+  {"model": "create_job.State","pk": 158,"fields": {"state_name": "Gävleborg County","country": 208,"short_name": "X"}},
+  {"model": "create_job.State","pk": 159,"fields": {"state_name": "Västernorrland County","country": 208,"short_name": "Y"}},
+  {"model": "create_job.State","pk": 160,"fields": {"state_name": "Jämtland County","country": 208,"short_name": "Z"}},
+  {"model": "create_job.State","pk": 161,"fields": {"state_name": "Västerbotten County","country": 208,"short_name": "AC"}},
+  {"model": "create_job.State","pk": 162,"fields": {"state_name": "Norrbotten County","country": 208,"short_name": "BD"}},
+  {"model": "create_job.State","pk": 163,"fields": {"state_name": "Singapore","country": 193,"short_name": "SG"}}
+]
+

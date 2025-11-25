@@ -1,0 +1,2189 @@
+[
+  {
+    "model": "create_job.Country",
+    "pk": 1,
+    "fields": {
+      "country_code": "+93",
+      "country_name": "Afghanistan",
+      "short_name": "AF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 2,
+    "fields": {
+      "country_code": "+355",
+      "country_name": "Albania",
+      "short_name": "AL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 3,
+    "fields": {
+      "country_code": "+213",
+      "country_name": "Algeria",
+      "short_name": "DZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 4,
+    "fields": {
+      "country_code": "+1-684",
+      "country_name": "American Samoa",
+      "short_name": "AS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 5,
+    "fields": {
+      "country_code": "+376",
+      "country_name": "Andorra",
+      "short_name": "AD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 6,
+    "fields": {
+      "country_code": "+244",
+      "country_name": "Angola",
+      "short_name": "AO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 7,
+    "fields": {
+      "country_code": "+1-264",
+      "country_name": "Anguilla",
+      "short_name": "AI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 8,
+    "fields": {
+      "country_code": "+672",
+      "country_name": "Antarctica",
+      "short_name": "AQ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 9,
+    "fields": {
+      "country_code": "+1-268",
+      "country_name": "Antigua and Barbuda",
+      "short_name": "AG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 10,
+    "fields": {
+      "country_code": "+54",
+      "country_name": "Argentina",
+      "short_name": "AR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 11,
+    "fields": {
+      "country_code": "+374",
+      "country_name": "Armenia",
+      "short_name": "AM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 12,
+    "fields": {
+      "country_code": "+297",
+      "country_name": "Aruba",
+      "short_name": "AW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 13,
+    "fields": {
+      "country_code": "+61",
+      "country_name": "Australia",
+      "short_name": "AU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 14,
+    "fields": {
+      "country_code": "+43",
+      "country_name": "Austria",
+      "short_name": "AT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 15,
+    "fields": {
+      "country_code": "+994",
+      "country_name": "Azerbaijan",
+      "short_name": "AZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 16,
+    "fields": {
+      "country_code": "+1-242",
+      "country_name": "Bahamas",
+      "short_name": "BS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 17,
+    "fields": {
+      "country_code": "+973",
+      "country_name": "Bahrain",
+      "short_name": "BH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 18,
+    "fields": {
+      "country_code": "+880",
+      "country_name": "Bangladesh",
+      "short_name": "BD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 19,
+    "fields": {
+      "country_code": "+1-246",
+      "country_name": "Barbados",
+      "short_name": "BB"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 20,
+    "fields": {
+      "country_code": "+375",
+      "country_name": "Belarus",
+      "short_name": "BY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 21,
+    "fields": {
+      "country_code": "+32",
+      "country_name": "Belgium",
+      "short_name": "BE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 22,
+    "fields": {
+      "country_code": "+501",
+      "country_name": "Belize",
+      "short_name": "BZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 23,
+    "fields": {
+      "country_code": "+229",
+      "country_name": "Benin",
+      "short_name": "BJ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 24,
+    "fields": {
+      "country_code": "+1-441",
+      "country_name": "Bermuda",
+      "short_name": "BM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 25,
+    "fields": {
+      "country_code": "+975",
+      "country_name": "Bhutan",
+      "short_name": "BT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 26,
+    "fields": {
+      "country_code": "+591",
+      "country_name": "Bolivia",
+      "short_name": "BO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 27,
+    "fields": {
+      "country_code": "+387",
+      "country_name": "Bosnia and Herzegovina",
+      "short_name": "BA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 28,
+    "fields": {
+      "country_code": "+267",
+      "country_name": "Botswana",
+      "short_name": "BW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 29,
+    "fields": {
+      "country_code": "+47",
+      "country_name": "Bouvet Island",
+      "short_name": "BV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 30,
+    "fields": {
+      "country_code": "+55",
+      "country_name": "Brazil",
+      "short_name": "BR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 31,
+    "fields": {
+      "country_code": "+246",
+      "country_name": "British Indian Ocean Territory",
+      "short_name": "IO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 32,
+    "fields": {
+      "country_code": "+673",
+      "country_name": "Brunei Darussalam",
+      "short_name": "BN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 33,
+    "fields": {
+      "country_code": "+359",
+      "country_name": "Bulgaria",
+      "short_name": "BG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 34,
+    "fields": {
+      "country_code": "+226",
+      "country_name": "Burkina Faso",
+      "short_name": "BF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 35,
+    "fields": {
+      "country_code": "+257",
+      "country_name": "Burundi",
+      "short_name": "BI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 36,
+    "fields": {
+      "country_code": "+855",
+      "country_name": "Cambodia",
+      "short_name": "KH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 37,
+    "fields": {
+      "country_code": "+237",
+      "country_name": "Cameroon",
+      "short_name": "CM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 38,
+    "fields": {
+      "country_code": "+1",
+      "country_name": "Canada",
+      "short_name": "CA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 39,
+    "fields": {
+      "country_code": "+238",
+      "country_name": "Cape Verde",
+      "short_name": "CV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 40,
+    "fields": {
+      "country_code": "+1-345",
+      "country_name": "Cayman Islands",
+      "short_name": "KY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 41,
+    "fields": {
+      "country_code": "+236",
+      "country_name": "Central African Republic",
+      "short_name": "CF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 42,
+    "fields": {
+      "country_code": "+235",
+      "country_name": "Chad",
+      "short_name": "TD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 43,
+    "fields": {
+      "country_code": "+56",
+      "country_name": "Chile",
+      "short_name": "CL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 44,
+    "fields": {
+      "country_code": "+86",
+      "country_name": "China",
+      "short_name": "CN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 45,
+    "fields": {
+      "country_code": "+61",
+      "country_name": "Christmas Island",
+      "short_name": "CX"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 46,
+    "fields": {
+      "country_code": "+61",
+      "country_name": "Cocos (Keeling) Islands",
+      "short_name": "CC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 47,
+    "fields": {
+      "country_code": "+57",
+      "country_name": "Colombia",
+      "short_name": "CO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 48,
+    "fields": {
+      "country_code": "+269",
+      "country_name": "Comoros",
+      "short_name": "KM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 49,
+    "fields": {
+      "country_code": "+242",
+      "country_name": "Congo",
+      "short_name": "CG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 50,
+    "fields": {
+      "country_code": "+243",
+      "country_name": "Congo (DRC)",
+      "short_name": "CD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 51,
+    "fields": {
+      "country_code": "+682",
+      "country_name": "Cook Islands",
+      "short_name": "CK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 52,
+    "fields": {
+      "country_code": "+506",
+      "country_name": "Costa Rica",
+      "short_name": "CR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 53,
+    "fields": {
+      "country_code": "+385",
+      "country_name": "Croatia",
+      "short_name": "HR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 54,
+    "fields": {
+      "country_code": "+53",
+      "country_name": "Cuba",
+      "short_name": "CU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 55,
+    "fields": {
+      "country_code": "+357",
+      "country_name": "Cyprus",
+      "short_name": "CY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 56,
+    "fields": {
+      "country_code": "+420",
+      "country_name": "Czech Republic",
+      "short_name": "CZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 57,
+    "fields": {
+      "country_code": "+45",
+      "country_name": "Denmark",
+      "short_name": "DK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 58,
+    "fields": {
+      "country_code": "+253",
+      "country_name": "Djibouti",
+      "short_name": "DJ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 59,
+    "fields": {
+      "country_code": "+1-767",
+      "country_name": "Dominica",
+      "short_name": "DM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 60,
+    "fields": {
+      "country_code": "+1-809",
+      "country_name": "Dominican Republic",
+      "short_name": "DO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 61,
+    "fields": {
+      "country_code": "+593",
+      "country_name": "Ecuador",
+      "short_name": "EC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 62,
+    "fields": {
+      "country_code": "+20",
+      "country_name": "Egypt",
+      "short_name": "EG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 63,
+    "fields": {
+      "country_code": "+503",
+      "country_name": "El Salvador",
+      "short_name": "SV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 64,
+    "fields": {
+      "country_code": "+240",
+      "country_name": "Equatorial Guinea",
+      "short_name": "GQ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 65,
+    "fields": {
+      "country_code": "+291",
+      "country_name": "Eritrea",
+      "short_name": "ER"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 66,
+    "fields": {
+      "country_code": "+372",
+      "country_name": "Estonia",
+      "short_name": "EE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 67,
+    "fields": {
+      "country_code": "+251",
+      "country_name": "Ethiopia",
+      "short_name": "ET"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 68,
+    "fields": {
+      "country_code": "+500",
+      "country_name": "Falkland Islands",
+      "short_name": "FK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 69,
+    "fields": {
+      "country_code": "+298",
+      "country_name": "Faroe Islands",
+      "short_name": "FO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 70,
+    "fields": {
+      "country_code": "+679",
+      "country_name": "Fiji",
+      "short_name": "FJ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 71,
+    "fields": {
+      "country_code": "+358",
+      "country_name": "Finland",
+      "short_name": "FI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 72,
+    "fields": {
+      "country_code": "+33",
+      "country_name": "France",
+      "short_name": "FR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 73,
+    "fields": {
+      "country_code": "+594",
+      "country_name": "French Guiana",
+      "short_name": "GF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 74,
+    "fields": {
+      "country_code": "+689",
+      "country_name": "French Polynesia",
+      "short_name": "PF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 75,
+    "fields": {
+      "country_code": "+262",
+      "country_name": "French Southern Territories",
+      "short_name": "TF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 76,
+    "fields": {
+      "country_code": "+241",
+      "country_name": "Gabon",
+      "short_name": "GA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 77,
+    "fields": {
+      "country_code": "+220",
+      "country_name": "Gambia",
+      "short_name": "GM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 78,
+    "fields": {
+      "country_code": "+995",
+      "country_name": "Georgia",
+      "short_name": "GE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 79,
+    "fields": {
+      "country_code": "+49",
+      "country_name": "Germany",
+      "short_name": "DE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 80,
+    "fields": {
+      "country_code": "+233",
+      "country_name": "Ghana",
+      "short_name": "GH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 81,
+    "fields": {
+      "country_code": "+350",
+      "country_name": "Gibraltar",
+      "short_name": "GI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 82,
+    "fields": {
+      "country_code": "+30",
+      "country_name": "Greece",
+      "short_name": "GR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 83,
+    "fields": {
+      "country_code": "+299",
+      "country_name": "Greenland",
+      "short_name": "GL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 84,
+    "fields": {
+      "country_code": "+1-473",
+      "country_name": "Grenada",
+      "short_name": "GD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 85,
+    "fields": {
+      "country_code": "+590",
+      "country_name": "Guadeloupe",
+      "short_name": "GP"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 86,
+    "fields": {
+      "country_code": "+1-671",
+      "country_name": "Guam",
+      "short_name": "GU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 87,
+    "fields": {
+      "country_code": "+502",
+      "country_name": "Guatemala",
+      "short_name": "GT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 88,
+    "fields": {
+      "country_code": "+44",
+      "country_name": "Guernsey",
+      "short_name": "GG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 89,
+    "fields": {
+      "country_code": "+224",
+      "country_name": "Guinea",
+      "short_name": "GN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 90,
+    "fields": {
+      "country_code": "+245",
+      "country_name": "Guinea-Bissau",
+      "short_name": "GW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 91,
+    "fields": {
+      "country_code": "+592",
+      "country_name": "Guyana",
+      "short_name": "GY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 92,
+    "fields": {
+      "country_code": "+509",
+      "country_name": "Haiti",
+      "short_name": "HT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 93,
+    "fields": {
+      "country_code": "+672",
+      "country_name": "Heard Island & McDonald Islands",
+      "short_name": "HM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 94,
+    "fields": {
+      "country_code": "+504",
+      "country_name": "Honduras",
+      "short_name": "HN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 95,
+    "fields": {
+      "country_code": "+852",
+      "country_name": "Hong Kong",
+      "short_name": "HK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 96,
+    "fields": {
+      "country_code": "+36",
+      "country_name": "Hungary",
+      "short_name": "HU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 97,
+    "fields": {
+      "country_code": "+354",
+      "country_name": "Iceland",
+      "short_name": "IS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 98,
+    "fields": {
+      "country_code": "+91",
+      "country_name": "India",
+      "short_name": "IN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 99,
+    "fields": {
+      "country_code": "+62",
+      "country_name": "Indonesia",
+      "short_name": "ID"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 100,
+    "fields": {
+      "country_code": "+98",
+      "country_name": "Iran",
+      "short_name": "IR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 101,
+    "fields": {
+      "country_code": "+964",
+      "country_name": "Iraq",
+      "short_name": "IQ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 102,
+    "fields": {
+      "country_code": "+353",
+      "country_name": "Ireland",
+      "short_name": "IE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 103,
+    "fields": {
+      "country_code": "+972",
+      "country_name": "Israel",
+      "short_name": "IL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 104,
+    "fields": {
+      "country_code": "+39",
+      "country_name": "Italy",
+      "short_name": "IT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 105,
+    "fields": {
+      "country_code": "+1-876",
+      "country_name": "Jamaica",
+      "short_name": "JM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 106,
+    "fields": {
+      "country_code": "+81",
+      "country_name": "Japan",
+      "short_name": "JP"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 107,
+    "fields": {
+      "country_code": "+962",
+      "country_name": "Jordan",
+      "short_name": "JO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 108,
+    "fields": {
+      "country_code": "+7",
+      "country_name": "Kazakhstan",
+      "short_name": "KZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 109,
+    "fields": {
+      "country_code": "+254",
+      "country_name": "Kenya",
+      "short_name": "KE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 110,
+    "fields": {
+      "country_code": "+686",
+      "country_name": "Kiribati",
+      "short_name": "KI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 111,
+    "fields": {
+      "country_code": "+850",
+      "country_name": "Korea (North)",
+      "short_name": "KP"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 112,
+    "fields": {
+      "country_code": "+82",
+      "country_name": "Korea (South)",
+      "short_name": "KR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 113,
+    "fields": {
+      "country_code": "+965",
+      "country_name": "Kuwait",
+      "short_name": "KW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 114,
+    "fields": {
+      "country_code": "+996",
+      "country_name": "Kyrgyzstan",
+      "short_name": "KG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 115,
+    "fields": {
+      "country_code": "+856",
+      "country_name": "Lao",
+      "short_name": "LA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 116,
+    "fields": {
+      "country_code": "+371",
+      "country_name": "Latvia",
+      "short_name": "LV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 117,
+    "fields": {
+      "country_code": "+961",
+      "country_name": "Lebanon",
+      "short_name": "LB"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 118,
+    "fields": {
+      "country_code": "+266",
+      "country_name": "Lesotho",
+      "short_name": "LS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 119,
+    "fields": {
+      "country_code": "+231",
+      "country_name": "Liberia",
+      "short_name": "LR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 120,
+    "fields": {
+      "country_code": "+218",
+      "country_name": "Libya",
+      "short_name": "LY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 121,
+    "fields": {
+      "country_code": "+423",
+      "country_name": "Liechtenstein",
+      "short_name": "LI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 122,
+    "fields": {
+      "country_code": "+370",
+      "country_name": "Lithuania",
+      "short_name": "LT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 123,
+    "fields": {
+      "country_code": "+352",
+      "country_name": "Luxembourg",
+      "short_name": "LU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 124,
+    "fields": {
+      "country_code": "+853",
+      "country_name": "Macao",
+      "short_name": "MO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 125,
+    "fields": {
+      "country_code": "+261",
+      "country_name": "Madagascar",
+      "short_name": "MG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 126,
+    "fields": {
+      "country_code": "+265",
+      "country_name": "Malawi",
+      "short_name": "MW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 127,
+    "fields": {
+      "country_code": "+60",
+      "country_name": "Malaysia",
+      "short_name": "MY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 128,
+    "fields": {
+      "country_code": "+960",
+      "country_name": "Maldives",
+      "short_name": "MV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 129,
+    "fields": {
+      "country_code": "+223",
+      "country_name": "Mali",
+      "short_name": "ML"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 130,
+    "fields": {
+      "country_code": "+356",
+      "country_name": "Malta",
+      "short_name": "MT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 131,
+    "fields": {
+      "country_code": "+692",
+      "country_name": "Marshall Islands",
+      "short_name": "MH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 132,
+    "fields": {
+      "country_code": "+596",
+      "country_name": "Martinique",
+      "short_name": "MQ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 133,
+    "fields": {
+      "country_code": "+222",
+      "country_name": "Mauritania",
+      "short_name": "MR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 134,
+    "fields": {
+      "country_code": "+230",
+      "country_name": "Mauritius",
+      "short_name": "MU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 135,
+    "fields": {
+      "country_code": "+262",
+      "country_name": "Mayotte",
+      "short_name": "YT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 136,
+    "fields": {
+      "country_code": "+52",
+      "country_name": "Mexico",
+      "short_name": "MX"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 137,
+    "fields": {
+      "country_code": "+691",
+      "country_name": "Micronesia",
+      "short_name": "FM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 138,
+    "fields": {
+      "country_code": "+373",
+      "country_name": "Moldova",
+      "short_name": "MD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 139,
+    "fields": {
+      "country_code": "+377",
+      "country_name": "Monaco",
+      "short_name": "MC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 140,
+    "fields": {
+      "country_code": "+976",
+      "country_name": "Mongolia",
+      "short_name": "MN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 141,
+    "fields": {
+      "country_code": "+382",
+      "country_name": "Montenegro",
+      "short_name": "ME"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 142,
+    "fields": {
+      "country_code": "+1-664",
+      "country_name": "Montserrat",
+      "short_name": "MS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 143,
+    "fields": {
+      "country_code": "+212",
+      "country_name": "Morocco",
+      "short_name": "MA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 144,
+    "fields": {
+      "country_code": "+258",
+      "country_name": "Mozambique",
+      "short_name": "MZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 145,
+    "fields": {
+      "country_code": "+95",
+      "country_name": "Myanmar",
+      "short_name": "MM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 146,
+    "fields": {
+      "country_code": "+264",
+      "country_name": "Namibia",
+      "short_name": "NA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 147,
+    "fields": {
+      "country_code": "+674",
+      "country_name": "Nauru",
+      "short_name": "NR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 148,
+    "fields": {
+      "country_code": "+977",
+      "country_name": "Nepal",
+      "short_name": "NP"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 149,
+    "fields": {
+      "country_code": "+31",
+      "country_name": "Netherlands",
+      "short_name": "NL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 150,
+    "fields": {
+      "country_code": "+687",
+      "country_name": "New Caledonia",
+      "short_name": "NC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 151,
+    "fields": {
+      "country_code": "+64",
+      "country_name": "New Zealand",
+      "short_name": "NZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 152,
+    "fields": {
+      "country_code": "+505",
+      "country_name": "Nicaragua",
+      "short_name": "NI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 153,
+    "fields": {
+      "country_code": "+227",
+      "country_name": "Niger",
+      "short_name": "NE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 154,
+    "fields": {
+      "country_code": "+234",
+      "country_name": "Nigeria",
+      "short_name": "NG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 155,
+    "fields": {
+      "country_code": "+683",
+      "country_name": "Niue",
+      "short_name": "NU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 156,
+    "fields": {
+      "country_code": "+672",
+      "country_name": "Norfolk Island",
+      "short_name": "NF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 157,
+    "fields": {
+      "country_code": "+389",
+      "country_name": "North Macedonia",
+      "short_name": "MK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 158,
+    "fields": {
+      "country_code": "+1-670",
+      "country_name": "Northern Mariana Islands",
+      "short_name": "MP"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 159,
+    "fields": {
+      "country_code": "+47",
+      "country_name": "Norway",
+      "short_name": "NO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 160,
+    "fields": {
+      "country_code": "+968",
+      "country_name": "Oman",
+      "short_name": "OM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 161,
+    "fields": {
+      "country_code": "+92",
+      "country_name": "Pakistan",
+      "short_name": "PK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 162,
+    "fields": {
+      "country_code": "+680",
+      "country_name": "Palau",
+      "short_name": "PW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 163,
+    "fields": {
+      "country_code": "+970",
+      "country_name": "Palestine",
+      "short_name": "PS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 164,
+    "fields": {
+      "country_code": "+507",
+      "country_name": "Panama",
+      "short_name": "PA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 165,
+    "fields": {
+      "country_code": "+675",
+      "country_name": "Papua New Guinea",
+      "short_name": "PG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 166,
+    "fields": {
+      "country_code": "+595",
+      "country_name": "Paraguay",
+      "short_name": "PY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 167,
+    "fields": {
+      "country_code": "+51",
+      "country_name": "Peru",
+      "short_name": "PE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 168,
+    "fields": {
+      "country_code": "+63",
+      "country_name": "Philippines",
+      "short_name": "PH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 169,
+    "fields": {
+      "country_code": "+870",
+      "country_name": "Pitcairn",
+      "short_name": "PN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 170,
+    "fields": {
+      "country_code": "+48",
+      "country_name": "Poland",
+      "short_name": "PL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 171,
+    "fields": {
+      "country_code": "+351",
+      "country_name": "Portugal",
+      "short_name": "PT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 172,
+    "fields": {
+      "country_code": "+1-787",
+      "country_name": "Puerto Rico",
+      "short_name": "PR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 173,
+    "fields": {
+      "country_code": "+974",
+      "country_name": "Qatar",
+      "short_name": "QA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 174,
+    "fields": {
+      "country_code": "+262",
+      "country_name": "Reunion",
+      "short_name": "RE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 175,
+    "fields": {
+      "country_code": "+40",
+      "country_name": "Romania",
+      "short_name": "RO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 176,
+    "fields": {
+      "country_code": "+7",
+      "country_name": "Russia",
+      "short_name": "RU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 177,
+    "fields": {
+      "country_code": "+250",
+      "country_name": "Rwanda",
+      "short_name": "RW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 178,
+    "fields": {
+      "country_code": "+590",
+      "country_name": "Saint Barth\u00e9lemy",
+      "short_name": "BL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 179,
+    "fields": {
+      "country_code": "+290",
+      "country_name": "Saint Helena",
+      "short_name": "SH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 180,
+    "fields": {
+      "country_code": "+1-869",
+      "country_name": "Saint Kitts and Nevis",
+      "short_name": "KN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 181,
+    "fields": {
+      "country_code": "+1-758",
+      "country_name": "Saint Lucia",
+      "short_name": "LC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 182,
+    "fields": {
+      "country_code": "+590",
+      "country_name": "Saint Martin",
+      "short_name": "MF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 183,
+    "fields": {
+      "country_code": "+508",
+      "country_name": "Saint Pierre and Miquelon",
+      "short_name": "PM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 184,
+    "fields": {
+      "country_code": "+1-784",
+      "country_name": "Saint Vincent & Grenadines",
+      "short_name": "VC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 185,
+    "fields": {
+      "country_code": "+685",
+      "country_name": "Samoa",
+      "short_name": "WS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 186,
+    "fields": {
+      "country_code": "+378",
+      "country_name": "San Marino",
+      "short_name": "SM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 187,
+    "fields": {
+      "country_code": "+239",
+      "country_name": "Sao Tome & Principe",
+      "short_name": "ST"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 188,
+    "fields": {
+      "country_code": "+966",
+      "country_name": "Saudi Arabia",
+      "short_name": "SA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 189,
+    "fields": {
+      "country_code": "+221",
+      "country_name": "Senegal",
+      "short_name": "SN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 190,
+    "fields": {
+      "country_code": "+381",
+      "country_name": "Serbia",
+      "short_name": "RS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 191,
+    "fields": {
+      "country_code": "+248",
+      "country_name": "Seychelles",
+      "short_name": "SC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 192,
+    "fields": {
+      "country_code": "+232",
+      "country_name": "Sierra Leone",
+      "short_name": "SL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 193,
+    "fields": {
+      "country_code": "+65",
+      "country_name": "Singapore",
+      "short_name": "SG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 194,
+    "fields": {
+      "country_code": "+1-721",
+      "country_name": "Sint Maarten",
+      "short_name": "SX"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 195,
+    "fields": {
+      "country_code": "+421",
+      "country_name": "Slovakia",
+      "short_name": "SK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 196,
+    "fields": {
+      "country_code": "+386",
+      "country_name": "Slovenia",
+      "short_name": "SI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 197,
+    "fields": {
+      "country_code": "+677",
+      "country_name": "Solomon Islands",
+      "short_name": "SB"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 198,
+    "fields": {
+      "country_code": "+252",
+      "country_name": "Somalia",
+      "short_name": "SO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 199,
+    "fields": {
+      "country_code": "+27",
+      "country_name": "South Africa",
+      "short_name": "ZA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 200,
+    "fields": {
+      "country_code": "+500",
+      "country_name": "South Georgia",
+      "short_name": "GS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 201,
+    "fields": {
+      "country_code": "+211",
+      "country_name": "South Sudan",
+      "short_name": "SS"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 202,
+    "fields": {
+      "country_code": "+34",
+      "country_name": "Spain",
+      "short_name": "ES"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 203,
+    "fields": {
+      "country_code": "+94",
+      "country_name": "Sri Lanka",
+      "short_name": "LK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 204,
+    "fields": {
+      "country_code": "+249",
+      "country_name": "Sudan",
+      "short_name": "SD"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 205,
+    "fields": {
+      "country_code": "+597",
+      "country_name": "Suriname",
+      "short_name": "SR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 206,
+    "fields": {
+      "country_code": "+47",
+      "country_name": "Svalbard & Jan Mayen",
+      "short_name": "SJ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 207,
+    "fields": {
+      "country_code": "+268",
+      "country_name": "Swaziland",
+      "short_name": "SZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 208,
+    "fields": {
+      "country_code": "+46",
+      "country_name": "Sweden",
+      "short_name": "SE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 209,
+    "fields": {
+      "country_code": "+41",
+      "country_name": "Switzerland",
+      "short_name": "CH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 210,
+    "fields": {
+      "country_code": "+963",
+      "country_name": "Syria",
+      "short_name": "SY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 211,
+    "fields": {
+      "country_code": "+886",
+      "country_name": "Taiwan",
+      "short_name": "TW"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 212,
+    "fields": {
+      "country_code": "+992",
+      "country_name": "Tajikistan",
+      "short_name": "TJ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 213,
+    "fields": {
+      "country_code": "+255",
+      "country_name": "Tanzania",
+      "short_name": "TZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 214,
+    "fields": {
+      "country_code": "+66",
+      "country_name": "Thailand",
+      "short_name": "TH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 215,
+    "fields": {
+      "country_code": "+670",
+      "country_name": "Timor-Leste",
+      "short_name": "TL"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 216,
+    "fields": {
+      "country_code": "+228",
+      "country_name": "Togo",
+      "short_name": "TG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 217,
+    "fields": {
+      "country_code": "+690",
+      "country_name": "Tokelau",
+      "short_name": "TK"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 218,
+    "fields": {
+      "country_code": "+676",
+      "country_name": "Tonga",
+      "short_name": "TO"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 219,
+    "fields": {
+      "country_code": "+1-868",
+      "country_name": "Trinidad & Tobago",
+      "short_name": "TT"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 220,
+    "fields": {
+      "country_code": "+216",
+      "country_name": "Tunisia",
+      "short_name": "TN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 221,
+    "fields": {
+      "country_code": "+90",
+      "country_name": "Turkey",
+      "short_name": "TR"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 222,
+    "fields": {
+      "country_code": "+993",
+      "country_name": "Turkmenistan",
+      "short_name": "TM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 223,
+    "fields": {
+      "country_code": "+1-649",
+      "country_name": "Turks & Caicos Islands",
+      "short_name": "TC"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 224,
+    "fields": {
+      "country_code": "+688",
+      "country_name": "Tuvalu",
+      "short_name": "TV"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 225,
+    "fields": {
+      "country_code": "+256",
+      "country_name": "Uganda",
+      "short_name": "UG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 226,
+    "fields": {
+      "country_code": "+380",
+      "country_name": "Ukraine",
+      "short_name": "UA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 227,
+    "fields": {
+      "country_code": "+971",
+      "country_name": "United Arab Emirates",
+      "short_name": "AE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 228,
+    "fields": {
+      "country_code": "+44",
+      "country_name": "United Kingdom",
+      "short_name": "GB"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 229,
+    "fields": {
+      "country_code": "+1",
+      "country_name": "United States",
+      "short_name": "US"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 230,
+    "fields": {
+      "country_code": "+1",
+      "country_name": "US Minor Outlying Islands",
+      "short_name": "UM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 231,
+    "fields": {
+      "country_code": "+598",
+      "country_name": "Uruguay",
+      "short_name": "UY"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 232,
+    "fields": {
+      "country_code": "+998",
+      "country_name": "Uzbekistan",
+      "short_name": "UZ"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 233,
+    "fields": {
+      "country_code": "+678",
+      "country_name": "Vanuatu",
+      "short_name": "VU"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 234,
+    "fields": {
+      "country_code": "+379",
+      "country_name": "Vatican City",
+      "short_name": "VA"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 235,
+    "fields": {
+      "country_code": "+58",
+      "country_name": "Venezuela",
+      "short_name": "VE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 236,
+    "fields": {
+      "country_code": "+84",
+      "country_name": "Vietnam",
+      "short_name": "VN"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 237,
+    "fields": {
+      "country_code": "+1-284",
+      "country_name": "Virgin Islands (British)",
+      "short_name": "VG"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 238,
+    "fields": {
+      "country_code": "+1-340",
+      "country_name": "Virgin Islands (US)",
+      "short_name": "VI"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 239,
+    "fields": {
+      "country_code": "+681",
+      "country_name": "Wallis & Futuna",
+      "short_name": "WF"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 240,
+    "fields": {
+      "country_code": "+212",
+      "country_name": "Western Sahara",
+      "short_name": "EH"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 241,
+    "fields": {
+      "country_code": "+967",
+      "country_name": "Yemen",
+      "short_name": "YE"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 242,
+    "fields": {
+      "country_code": "+260",
+      "country_name": "Zambia",
+      "short_name": "ZM"
+    }
+  },
+  {
+    "model": "create_job.Country",
+    "pk": 243,
+    "fields": {
+      "country_code": "+263",
+      "country_name": "Zimbabwe",
+      "short_name": "ZW"
+    }
+  }
+]
