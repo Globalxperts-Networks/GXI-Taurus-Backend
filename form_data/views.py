@@ -3,7 +3,7 @@ import logging
 from functools import reduce
 from operator import or_
 import json
-
+from rest_framework.permissions import AllowAny
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
