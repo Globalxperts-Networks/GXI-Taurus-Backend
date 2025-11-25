@@ -4,6 +4,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Skills,Country
 from .serializers import  SkillsSerializer,CountryWithStatesSerializer
+from django.db.models import Q
 
 
 # -------------------- SKILLS API --------------------
@@ -63,6 +64,11 @@ class JobQuestionsAPIView(APIView):
  
 class CountryStateListAPI(APIView):
     def get(self, request):
+        search_query = request.GET.get('search', None)
+
         countries = Country.objects.prefetch_related('states').all()
+
+        if search_query:
+            countries = countries.filter(Q(country_name__icontains=search_query) |Q(states__state_name__icontains=search_query)).distinct()
         serializer = CountryWithStatesSerializer(countries, many=True)
         return Response(serializer.data)
