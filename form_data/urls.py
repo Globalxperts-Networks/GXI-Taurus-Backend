@@ -22,6 +22,7 @@ urlpatterns = [
     path("hr/incoming-mails/<int:pk>/", FetchIncomingMailAPIView.as_view(), name="hr-incoming-mails"),
     path("hr/chat-history/<int:pk>/", ChatHistoryAPIView.as_view(), name="chat-histor"),
     path("role_type_counts/", RoleTypeCountAPIView.as_view(), name="role-type-counts"),
+    path("public/submit-form/", PublicFormAPIView.as_view(), name="public-submit-form"),
 
 
 

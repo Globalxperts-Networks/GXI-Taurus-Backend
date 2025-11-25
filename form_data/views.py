@@ -1202,3 +1202,105 @@ class role_types(APIView):
             logger.exception("GET FormData error: %s", str(e))
             return Response({"status": "error", "message": f"An error occurred: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PublicFormAPIView(APIView):
+
+    authentication_classes = []      # Disable authentication
+    permission_classes = [AllowAny]  # Allow all
+
+    def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
+                          interview_date=None, interview_time=None, joining_date=None, is_new_candidate=False):
+        if not candidate_email:
+            return
+
+        if is_new_candidate:
+            template_name = "application_welcome.html"
+            subject = "Thank You For Applying - GXI Networks"
+        else:
+            template_name = "application_status.html"
+            subject = f"Update: Your Application Status - {current_status}"
+
+        context = {
+            "candidate_name": candidate_name,
+            "current_status": current_status,
+            "phase": phase,
+            "interview_date": interview_date,
+            "interview_time": interview_time,
+            "joining_date": joining_date,
+        }
+
+        html_message = render_to_string(template_name, context)
+        text_message = strip_tags(html_message) if html_message else "Your application status has been updated."
+
+        try:
+            send_mail(
+                subject=subject,
+                message=text_message,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None) or "",
+                recipient_list=[candidate_email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Log error; do not raise to keep API flow stable
+            logger.exception("Failed to send status email to %s: %s", candidate_email, str(e))
+
+
+    def post(self, request):
+        submission_data_raw = request.data.get("submission_data")
+       
+
+        # Convert JSON string from multipart form
+        if isinstance(submission_data_raw, str):
+            try:
+                submission_data = json.loads(submission_data_raw)
+            except Exception as e:
+                return Response(
+                    {"error": "Invalid JSON in submission_data", "details": str(e)},
+                    status=400
+                )
+        elif isinstance(submission_data_raw, dict):
+            submission_data = submission_data_raw
+        else:
+            submission_data = {}
+
+        data = request.data.copy()
+
+        # 🔥 Convert dict → JSON string for serializer
+        data["submission_data"] = json.dumps(submission_data)
+
+        serializer = FormDataSerializer(data=data)
+
+        if serializer.is_valid():
+            candidate_email = submission_data.get("Email")
+            is_new = not FormData.objects.filter(
+                submission_data__Email=candidate_email
+            ).exists()
+
+            form_obj = serializer.save()
+            submission = form_obj.submission_data  # Python dict (auto parsed)
+
+            self.send_status_email(
+                candidate_email=submission.get("Email"),
+                candidate_name=submission.get("Name"),
+                current_status=submission.get("status", "Applied"),
+                phase=submission.get("phase"),
+                interview_date=submission.get("interview_time"),
+                interview_time=submission.get("interview_time"),
+                joining_date=submission.get("joining_date"),
+                is_new_candidate=is_new
+            )
+
+            return Response({
+                "status": "success",
+                "message": "Form data saved successfully",
+                "data": serializer.data
+            }, status=201)
+
+        return Response({
+            "status": "error",
+            "errors": serializer.errors
+        }, status=400)
+
+
