@@ -70,5 +70,11 @@ class CountryStateListAPI(APIView):
 
         if search_query:
             countries = countries.filter(Q(country_name__icontains=search_query) |Q(states__state_name__icontains=search_query)).distinct()
-        serializer = CountryWithStatesSerializer(countries, many=True)
-        return Response(serializer.data)
+        serializer = CountryWithStatesSerializer(countries, many=True).data
+        if search_query:
+            for country in serializer:
+                country["states"] = [
+                    st for st in country["states"]
+                    if search_query.lower() in st["state_name"].lower()
+                ] or country["states"]
+        return Response(serializer)
