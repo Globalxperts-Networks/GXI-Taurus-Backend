@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 
 from .models import add_job
 from .serializers import addjobSerializer
+from rest_framework.permissions import AllowAny
 
 
 class TenPerPagePagination(PageNumberPagination):
@@ -72,3 +73,28 @@ class AddJobAPIView(APIView):
         job.delete()
         # 200 with a message (clearer for clients than a 204 with empty body)
         return Response({"status": "success", "message": "Job deleted"}, status=status.HTTP_200_OK)
+
+class PublicJobAPIView(APIView):
+
+    authentication_classes = []      # Disable authentication
+    permission_classes = [AllowAny]  # Allow all
+
+    def get(self, request, pk=None):
+        base_qs = (
+            add_job.objects
+            .select_related('teams', 'employments_types', 'posted_by', 'manager', 'hiring_manager')
+            .prefetch_related('hr_team_members')
+            .order_by('-created_at')  # <-- default ordering
+        )
+
+        if pk:
+            job = get_object_or_404(base_qs, pk=pk)
+            serializer = addjobSerializer(job)
+            return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+        paginator = TenPerPagePagination()
+        page = paginator.paginate_queryset(base_qs, request)
+        serializer = addjobSerializer(page, many=True)
+        return paginator.get_paginated_response({"status": "success", "data": serializer.data})
+
+    
