@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job
+from .models import Skills, Department, Job_types, Location, Teams, add_job , Country , State
 from superadmin.models import UserProfile
 
 
@@ -75,3 +75,5 @@ admin.site.register(Skills)
 admin.site.register(Department)
 admin.site.register(Job_types)
 admin.site.register(Location)
+admin.site.register(Country)
+admin.site.register(State)

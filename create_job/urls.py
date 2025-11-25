@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SkillsAPIView, JobQuestionsAPIView, ResumeParserView, ResumeAIParserView
+from .views import SkillsAPIView, JobQuestionsAPIView, ResumeParserView, ResumeAIParserView , CountryStateListAPI
 from .departmentviews import DepartmentAPIView
 from .jobtypesviews import jobtypesAPIView
 from .locationViews import LocationAPIView
@@ -29,4 +29,7 @@ urlpatterns = [
     path('jobs/<int:job_id>/questions/', JobQuestionsAPIView.as_view(), name="job-questions"),
     path('parse-resume/', ResumeParserView.as_view()),
     path("resume-ai-parse/", ResumeAIParserView.as_view()),
+    path("country-states/", CountryStateListAPI.as_view())
+
+
 ]
