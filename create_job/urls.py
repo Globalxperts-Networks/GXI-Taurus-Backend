@@ -4,7 +4,7 @@ from .departmentviews import DepartmentAPIView
 from .jobtypesviews import jobtypesAPIView
 from .locationViews import LocationAPIView
 from .teamsviews import teamsAPIView
-from .addjobviews import AddJobAPIView
+from .addjobviews import AddJobAPIView, PublicJobAPIView
 
 urlpatterns = [
     path('skills/', SkillsAPIView.as_view()),
@@ -29,4 +29,6 @@ urlpatterns = [
     path('jobs/<int:job_id>/questions/', JobQuestionsAPIView.as_view(), name="job-questions"),
     path('parse-resume/', ResumeParserView.as_view()),
     path("resume-ai-parse/", ResumeAIParserView.as_view()),
+    path('public/jobs/', PublicJobAPIView.as_view()),          # List jobs (no auth)
+    path('public/jobs/<int:pk>/', PublicJobAPIView.as_view()),  # Job detail (no auth)
 ]
