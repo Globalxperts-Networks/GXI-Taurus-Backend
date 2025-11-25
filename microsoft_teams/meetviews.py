@@ -6,8 +6,8 @@ from rest_framework import status
 from django.conf import settings
 
 from .graph_service import GraphService, GraphAPIError
-from .models import Meeting
-from .serializers import MeetingSerializer
+from .models import Meeting , TeamsUser
+from .serializers import MeetingSerializer , TeamsUserSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -94,30 +94,140 @@ class CreateEventAPIView(APIView):
             return Response({"status": "error", "message": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
+
+from django.db import transaction
 class teams_user(APIView):
     def get(self, request):
+        if GraphService is None:
+            logger.error("GraphService not available; ensure graph_service.py is importable from this app.")
+            return Response({"status": "error", "detail": "GraphService not available"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         graph = GraphService()
         try:
             token = graph.get_app_token()
-
-            # read query params (safe parsing)
-            top_q = request.query_params.get("top", "400")
+            top_q = request.query_params.get("top", "500")
             try:
                 top = int(top_q)
             except (TypeError, ValueError):
-                top = 400
-
+                top = 500
             fetch_all_q = request.query_params.get("fetch_all", "false").lower()
             fetch_all = fetch_all_q in ("1", "true", "yes", "y")
-
             user_info = graph.user_list(token=token, top=top, fetch_all=fetch_all)
+            users = user_info.get("value", []) if isinstance(user_info, dict) else []
+            if not users:
+                return Response({
+                    "status": "success",
+                    "message": "No users returned from Graph",
+                    "created": 0, "updated": 0, "skipped": 0, "total_fetched": 0
+                }, status=status.HTTP_200_OK)
 
-            return Response({"status": "success", "user": user_info}, status=status.HTTP_200_OK)
+            now = timezone.now()
+            incoming_by_id = {}
+            incoming_ids = []
+            for u in users:
+                gid = u.get("id")
+                if not gid:
+                    continue
+                incoming_by_id[gid] = u
+                incoming_ids.append(gid)
+            existing_qs = TeamsUser.objects.filter(graph_id__in=incoming_ids)
+            existing_map = {t.graph_id: t for t in existing_qs}
+
+            to_create = []
+            to_update = []
+            skipped = 0
+
+            for gid, payload in incoming_by_id.items():
+                defaults = {
+                    "display_name": payload.get("displayName"),
+                    "given_name": payload.get("givenName"),
+                    "surname": payload.get("surname"),
+                    "job_title": payload.get("jobTitle"),
+                    "mail": payload.get("mail"),
+                    "mobile_phone": payload.get("mobilePhone"),
+                    "office_location": payload.get("officeLocation"),
+                    "preferred_language": payload.get("preferredLanguage"),
+                    "user_principal_name": payload.get("userPrincipalName"),
+                    "business_phones": payload.get("businessPhones") or [],
+                    "raw_graph": payload,
+                    "updated_at": now
+                }
+
+                existing = existing_map.get(gid)
+                if existing:
+                    changed = False
+                    for field, val in defaults.items():
+                        if getattr(existing, field) != val:
+                            setattr(existing, field, val)
+                            changed = True
+                    if changed:
+                        to_update.append(existing)
+                    else:
+                        skipped += 1
+                else:
+                    obj = TeamsUser(graph_id=gid, **defaults)
+                    to_create.append(obj)
+
+            created_count = 0
+            updated_count = 0
+            try:
+                with transaction.atomic():
+                    if to_create:
+                        TeamsUser.objects.bulk_create(to_create, batch_size=50)
+                        created_count = len(to_create)
+                    if to_update:
+                        TeamsUser.objects.bulk_update(
+                            to_update,
+                            fields=[
+                                "display_name", "given_name", "surname", "job_title", "mail",
+                                "mobile_phone", "office_location", "preferred_language",
+                                "user_principal_name", "business_phones", "raw_graph", "updated_at"
+                            ],
+                            batch_size=50
+                        )
+                        updated_count = len(to_update)
+            except Exception:
+                # If bulk operations fail for any DB/back-end reason, fall back to per-record upserts
+                logger.exception("Bulk upsert failed; falling back to per-record update_or_create")
+                created_count = 0
+                updated_count = 0
+                for gid, payload in incoming_by_id.items():
+                    defaults = {
+                        "display_name": payload.get("displayName"),
+                        "given_name": payload.get("givenName"),
+                        "surname": payload.get("surname"),
+                        "job_title": payload.get("jobTitle"),
+                        "mail": payload.get("mail"),
+                        "mobile_phone": payload.get("mobilePhone"),
+                        "office_location": payload.get("officeLocation"),
+                        "preferred_language": payload.get("preferredLanguage"),
+                        "user_principal_name": payload.get("userPrincipalName"),
+                        "business_phones": payload.get("businessPhones") or [],
+                        "raw_graph": payload,
+                        "updated_at": now
+                    }
+                    obj, created = TeamsUser.objects.update_or_create(graph_id=gid, defaults=defaults)
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                # recalc skipped count
+                skipped = max(0, len(incoming_by_id) - created_count - updated_count)
+
+            # Respond with summary
+            return Response({
+                "status": "success",
+                "created": created_count,
+                "updated": updated_count,
+                "skipped": skipped,
+                "total_fetched": len(users)
+            }, status=status.HTTP_200_OK)
 
         except GraphAPIError as gee:
             logger.exception("Graph API error fetching user info")
+            # GraphAPIError expected to have .status_code and .body attributes in your code
             return Response(
-                {"status": "error", "graph_status": gee.status_code, "graph_body": gee.body},
+                {"status": "error", "graph_status": getattr(gee, "status_code", None), "graph_body": getattr(gee, "body", str(gee))},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except Exception as exc:

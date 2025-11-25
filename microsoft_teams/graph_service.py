@@ -28,8 +28,6 @@ class GraphService:
         self.client_secret = client_secret or getattr(settings, "AZURE_CLIENT_SECRET", None)
         if not all([self.tenant, self.client_id, self.client_secret]):
             raise ValueError("Azure credentials missing in constructor or settings.")
-
-    # Token logic (app-only)
     def _is_token_valid(self):
         return _token_cache["access_token"] and time.time() < _token_cache["expiry_time"] - 10
 
@@ -113,7 +111,7 @@ class GraphService:
     # You can add other helpers like get_teams, get_team_members etc. as needed.
 
 
-    def user_list(self, token: str, top: int = 200, fetch_all: bool = False, timeout: int = 20) -> Dict[str, Any]:
+    def user_list(self, token: str, top: int = 500, fetch_all: bool = False, timeout: int = 20) -> Dict[str, Any]:
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
@@ -168,11 +166,6 @@ class GraphService:
 
 
     def reschedule_event(self, token: str, organizer_user_id: str, event_id: str, start_iso: str, end_iso: str, subject: Optional[str] = None):
-        """
-        PATCH an existing calendar event for a user. Returns:
-        - dict (updated event) if Graph returns it (200),
-        - None if Graph returns 204 (no content) but the update succeeded.
-        """
         url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/events/{event_id}"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         payload = {
@@ -202,9 +195,6 @@ class GraphService:
 
 
     def get_event_for_user(self, token: str, organizer_user_id: str, event_id: str) -> dict:
-        """
-        GET the event object for a user. Returns the event JSON; raises GraphAPIError on non-2xx.
-        """
         url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/events/{event_id}"
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
         resp = requests.get(url, headers=headers, timeout=20)
@@ -218,10 +208,6 @@ class GraphService:
 
 
     def reschedule_online_meeting(self, token: str, organizer_user_id: str, meeting_id: str, start_iso: str, end_iso: str, subject: Optional[str] = None):
-        """
-        PATCH an onlineMeeting resource. Graph may accept updates on onlineMeetings depending on tenant/APIs.
-        Returns dict if returned, or None if 204.
-        """
         url = f"{self.GRAPH_BASE}/users/{organizer_user_id}/onlineMeetings/{meeting_id}"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         payload = {
