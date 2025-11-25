@@ -2,8 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from .models import Skills
-from .serializers import  SkillsSerializer
+from django.db.models import Q
+from .models import Skills , Country , State
+from .serializers import  SkillsSerializer , CountryWithStatesSerializer
 
 from rest_framework.parsers import MultiPartParser
 from .utils.extractors import extract_text_from_pdf, extract_text_from_docx
@@ -136,3 +137,21 @@ class ResumeAIParserView(APIView):
 
         return Response({"parsed": parsed_json}, status=200)
 
+
+
+class CountryStateListAPI(APIView):
+    def get(self, request):
+        exact_name = request.GET.get("country_name")
+
+        countries = Country.objects.prefetch_related("states")
+
+        # Apply exact (case-insensitive) match
+        if exact_name:
+            countries = countries.filter(country_name__iexact=exact_name)
+
+        serializer = CountryWithStatesSerializer(countries, many=True)
+
+        return Response({
+            "status": "success",
+            "data": serializer.data
+        })

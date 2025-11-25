@@ -220,6 +220,18 @@ class FormDataAPIView(APIView):
 
         ts = timezone.now().isoformat()
 
+        # If you want to restrict allowed authors, set this list (case-sensitive).
+        # Leave as None or empty list to allow any author string.
+        ALLOWED_NOTE_AUTHORS = None
+        # Example:
+        # ALLOWED_NOTE_AUTHORS = ["HR", "Manager", "Director"]
+
+        # Read author from request payload (the user asked to send author manually)
+        author_name = request.data.get("author")
+        # Normalize empty strings to None
+        if isinstance(author_name, str):
+            author_name = author_name.strip() or None
+
         with transaction.atomic():
             try:
                 form = FormData.objects.select_for_update().get(pk=pk)
@@ -234,12 +246,26 @@ class FormDataAPIView(APIView):
 
             # === NOTES: Always allow adding/updating notes regardless of status ===
             note_was_added = False
-            if note:
+            if note is not None:
+                # Require author when sending a note
+                if not author_name:
+                    return Response({"status": "error", "message": "Author is required when adding a note."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                # If ALLOWED_NOTE_AUTHORS is provided, validate the author
+                if ALLOWED_NOTE_AUTHORS:
+                    if author_name not in ALLOWED_NOTE_AUTHORS:
+                        return Response({"status": "error", "message": f"Author must be one of: {', '.join(ALLOWED_NOTE_AUTHORS)}."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+                # Append a note entry that includes author and timestamp
                 submission_data.setdefault("notes_history", []).append({
                     "note": note,
+                    "author": author_name,
                     "updated_at": ts
                 })
+                # Store latest note and author at top level for quick access
                 submission_data["note"] = note
+                submission_data["note_author"] = author_name
                 note_was_added = True
 
             # If either no status provided, or same as current => save note only (if any) and return
@@ -247,9 +273,12 @@ class FormDataAPIView(APIView):
                 form.submission_data = submission_data
                 form.save()
                 serializer = FormDataSerializer(form)
+                msg = f"Update saved (status unchanged: {submission_data.get('status')})."
+                if note_was_added:
+                    msg = f"Note saved by {author_name}. " + msg
                 return Response({
                     "status": "success",
-                    "message": f"Update saved (status unchanged: {submission_data.get('status')}).",
+                    "message": msg,
                     "data": serializer.data
                 }, status=status.HTTP_200_OK)
 
@@ -378,6 +407,7 @@ class FormDataAPIView(APIView):
                 "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
+
 
 
 
@@ -1078,3 +1108,97 @@ class ChatHistoryAPIView(APIView):
         full_chat = clean_sent + clean_received
 
         return Response({"chat": full_chat})
+
+
+
+class role_types(APIView):
+    def get(self, request, pk=None):
+        try:
+            if pk:
+                form = FormData.objects.filter(id=pk).first()
+                if not form:
+                    return Response({"status": "error", "message": "Record not found"},
+                                    status=status.HTTP_404_NOT_FOUND)
+                serializer = FormDataSerializer(form)
+                return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
+
+            search_query = request.query_params.get('search', None)
+            form_name = request.query_params.get('form_name', None)
+            sort_by = request.query_params.get('sort_by', '-submitted_at')
+
+            role_type_param = request.query_params.get('role_type')  # comma separated
+            role_type_exact = request.query_params.get('role_type_exact', 'false').lower() in ('1', 'true', 'yes')
+
+            forms = FormData.objects.all()
+
+            if form_name:
+                forms = forms.filter(form_name__icontains=form_name)
+
+            if search_query:
+                forms = forms.filter(
+                    Q(form_name__icontains=search_query) |
+                    Q(submission_data__icontains=search_query)
+                )
+
+            # ------------------------------------------------
+            # ALWAYS RETURN ROLE TYPE COUNTS (NEW LOGIC)
+            # ------------------------------------------------
+            all_forms = FormData.objects.all()
+            role_type_counts = {}
+
+            # collect all distinct Role_Type values
+            distinct_roles = set(
+                all_forms.values_list("submission_data__Role_Type", flat=True)
+            )
+
+            for rt in distinct_roles:
+                if rt:  # avoid None values
+                    role_type_counts[rt] = all_forms.filter(
+                        submission_data__Role_Type=rt
+                    ).count()
+
+            # ------------------------------------------------
+            # APPLY FILTER IF ?role_type= PASSED
+            # ------------------------------------------------
+            if role_type_param:
+                role_types = [rt.strip() for rt in role_type_param.split(',') if rt.strip()]
+                if role_types:
+                    if role_type_exact:
+                        conds = [Q(**{"submission_data__Role_Type__iexact": rt}) for rt in role_types]
+                    else:
+                        conds = [Q(**{"submission_data__Role_Type__icontains": rt}) for rt in role_types]
+
+                    forms = forms.filter(reduce(or_, conds))
+
+            valid_sort_fields = ['form_name', 'submitted_at']
+            if sort_by.lstrip('-') not in valid_sort_fields:
+                sort_by = '-submitted_at'
+            forms = forms.order_by(sort_by)
+
+            page = request.query_params.get('page', 1)
+            page_size = int(request.query_params.get('page_size', 25))
+            paginator = Paginator(forms, page_size)
+
+            try:
+                forms_page = paginator.page(page)
+            except PageNotAnInteger:
+                forms_page = paginator.page(1)
+            except EmptyPage:
+                forms_page = paginator.page(paginator.num_pages)
+
+            serializer = FormDataSerializer(forms_page, many=True)
+
+            return Response({
+                "status": "success",
+                "total_records": paginator.count,
+                "total_pages": paginator.num_pages,
+                "current_page": forms_page.number,
+                "page_size": page_size,
+                "role_type_counts": role_type_counts,   # ALWAYS RETURN THIS
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception("GET FormData error: %s", str(e))
+            return Response({"status": "error", "message": f"An error occurred: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

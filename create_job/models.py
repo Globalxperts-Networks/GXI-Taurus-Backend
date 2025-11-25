@@ -162,3 +162,33 @@ class Question(models.Model):
 
     def __str__(self):
         return self.label
+
+
+
+class Country(models.Model):
+    country_code = models.CharField(max_length=10,)
+    country_name = models.CharField(max_length=100)
+    short_name = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return self.country_name
+    
+    class meta:
+        verbose_name = "Country"
+        verbose_name_plural = "Countries"
+        ordering = ["country_name"]
+
+
+class State(models.Model):
+    state_name = models.CharField(max_length=100)
+    country = models.ForeignKey(Country, related_name='states', on_delete=models.CASCADE)
+    short_name = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.state_name} ({self.country.country_name})"
+    
+
+    class meta:
+        verbose_name = "State"
+        verbose_name_plural = "States"
+        ordering = ["state_name"]
