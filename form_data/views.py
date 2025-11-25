@@ -220,6 +220,18 @@ class FormDataAPIView(APIView):
 
         ts = timezone.now().isoformat()
 
+        # If you want to restrict allowed authors, set this list (case-sensitive).
+        # Leave as None or empty list to allow any author string.
+        ALLOWED_NOTE_AUTHORS = None
+        # Example:
+        # ALLOWED_NOTE_AUTHORS = ["HR", "Manager", "Director"]
+
+        # Read author from request payload (the user asked to send author manually)
+        author_name = request.data.get("author")
+        # Normalize empty strings to None
+        if isinstance(author_name, str):
+            author_name = author_name.strip() or None
+
         with transaction.atomic():
             try:
                 form = FormData.objects.select_for_update().get(pk=pk)
@@ -234,12 +246,26 @@ class FormDataAPIView(APIView):
 
             # === NOTES: Always allow adding/updating notes regardless of status ===
             note_was_added = False
-            if note:
+            if note is not None:
+                # Require author when sending a note
+                if not author_name:
+                    return Response({"status": "error", "message": "Author is required when adding a note."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                # If ALLOWED_NOTE_AUTHORS is provided, validate the author
+                if ALLOWED_NOTE_AUTHORS:
+                    if author_name not in ALLOWED_NOTE_AUTHORS:
+                        return Response({"status": "error", "message": f"Author must be one of: {', '.join(ALLOWED_NOTE_AUTHORS)}."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+                # Append a note entry that includes author and timestamp
                 submission_data.setdefault("notes_history", []).append({
                     "note": note,
+                    "author": author_name,
                     "updated_at": ts
                 })
+                # Store latest note and author at top level for quick access
                 submission_data["note"] = note
+                submission_data["note_author"] = author_name
                 note_was_added = True
 
             # If either no status provided, or same as current => save note only (if any) and return
@@ -247,9 +273,12 @@ class FormDataAPIView(APIView):
                 form.submission_data = submission_data
                 form.save()
                 serializer = FormDataSerializer(form)
+                msg = f"Update saved (status unchanged: {submission_data.get('status')})."
+                if note_was_added:
+                    msg = f"Note saved by {author_name}. " + msg
                 return Response({
                     "status": "success",
-                    "message": f"Update saved (status unchanged: {submission_data.get('status')}).",
+                    "message": msg,
                     "data": serializer.data
                 }, status=status.HTTP_200_OK)
 
@@ -378,6 +407,7 @@ class FormDataAPIView(APIView):
                 "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
+
 
 
 
