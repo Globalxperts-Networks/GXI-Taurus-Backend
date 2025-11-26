@@ -123,8 +123,10 @@ class addjobSerializer(serializers.ModelSerializer):
     teams = serializers.PrimaryKeyRelatedField(
         queryset=Teams.objects.all(), required=False, allow_null=True, write_only=True
     )
-    employments_types = serializers.PrimaryKeyRelatedField(
-        queryset=Job_types.objects.all(), required=False, allow_null=True, write_only=True
+    employments_types = serializers.SlugRelatedField(
+        slug_field='code',               # use the field on Job_types that stores "full_time"
+        queryset=Job_types.objects.all(),
+        allow_null=True, required=False, write_only=True
     )
     posted_by = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -133,14 +135,21 @@ class addjobSerializer(serializers.ModelSerializer):
     )
 
     # assume these fields reference TeamsUser model
-    manager = serializers.PrimaryKeyRelatedField(
-        queryset=TeamsUser.objects.all(), required=False, allow_null=True, write_only=True
+    manager = serializers.SlugRelatedField(
+        slug_field='graph_id',           # TeamsUser.graph_id must be unique
+        queryset=TeamsUser.objects.all(),
+        allow_null=True, required=False, write_only=True
     )
-    hiring_manager = serializers.PrimaryKeyRelatedField(
-        queryset=TeamsUser.objects.all(), required=False, allow_null=True, write_only=True
+    hiring_manager = serializers.SlugRelatedField(
+    slug_field='graph_id',
+    queryset=TeamsUser.objects.all(),
+    allow_null=True, required=False, write_only=True
     )
-    hr_team_members = serializers.PrimaryKeyRelatedField(
-        queryset=TeamsUser.objects.all(), many=True, required=False, write_only=True
+
+    hr_team_members = serializers.SlugRelatedField(
+    slug_field='graph_id',
+    queryset=TeamsUser.objects.all(),
+    many=True, required=False, write_only=True
     )
 
     # --- read-only detail fields using your existing TeamsUserSerializer ---
