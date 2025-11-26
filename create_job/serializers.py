@@ -5,6 +5,8 @@ from rest_framework import serializers
 
 from .models import Skills, Department, Job_types, Location, Teams, add_job, Question , Country , State
 from superadmin.models import UserProfile  # role constants
+from microsoft_teams.models import TeamsUser
+from microsoft_teams.serializers import TeamsUserSerializer
 
 User = get_user_model()
 
@@ -117,12 +119,12 @@ class LiteUserSerializer(serializers.ModelSerializer):
 
 # ---------- add_job ----------
 class addjobSerializer(serializers.ModelSerializer):
-    # ---- write-only relation IDs (accepted on POST/PATCH, hidden in output) ----
+    # --- write-only input fields (IDs) pointing to TeamsUser ---
     teams = serializers.PrimaryKeyRelatedField(
-        queryset=Teams.objects.all(), allow_null=True, required=False, write_only=True
+        queryset=Teams.objects.all(), required=False, allow_null=True, write_only=True
     )
     employments_types = serializers.PrimaryKeyRelatedField(
-        queryset=Job_types.objects.all(), allow_null=True, required=False, write_only=True
+        queryset=Job_types.objects.all(), required=False, allow_null=True, write_only=True
     )
     posted_by = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -130,114 +132,61 @@ class addjobSerializer(serializers.ModelSerializer):
         queryset=Skills.objects.all(), many=True, required=False, write_only=True
     )
 
+    # assume these fields reference TeamsUser model
     manager = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=UserProfile.ROLE_MANAGER),
-        allow_null=True, required=False, write_only=True
+        queryset=TeamsUser.objects.all(), required=False, allow_null=True, write_only=True
     )
     hiring_manager = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=UserProfile.Hiring_Manager),
-        allow_null=True, required=False, write_only=True
+        queryset=TeamsUser.objects.all(), required=False, allow_null=True, write_only=True
     )
     hr_team_members = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=UserProfile.ROLE_HR),
-        many=True, required=False, write_only=True
+        queryset=TeamsUser.objects.all(), many=True, required=False, write_only=True
     )
 
-    # ---- read-only detail fields (shown in responses) ----
-    teams_detail = serializers.SerializerMethodField(read_only=True)
-    employments_types_detail = serializers.SerializerMethodField(read_only=True)
-    posted_by_detail = serializers.SerializerMethodField(read_only=True)
-    manager_detail = serializers.SerializerMethodField(read_only=True)
-    hiring_manager_detail = serializers.SerializerMethodField(read_only=True)
-    hr_team_members_detail = serializers.SerializerMethodField(read_only=True)
-    skills_details = serializers.SerializerMethodField(read_only=True)
+    # --- read-only detail fields using your existing TeamsUserSerializer ---
+    teams_detail = serializers.SerializerMethodField()
+    employments_types_detail = serializers.SerializerMethodField()
+    posted_by_detail = serializers.SerializerMethodField()
+
+    manager_detail = TeamsUserSerializer(source="manager", read_only=True)
+    hiring_manager_detail = TeamsUserSerializer(source="hiring_manager", read_only=True)
+    hr_team_members_detail = TeamsUserSerializer(source="hr_team_members", many=True, read_only=True)
+
+    skills_details = serializers.SerializerMethodField()
 
     class Meta:
         model = add_job
-        fields = '__all__'
-        read_only_fields = ('job_id', 'created_at', 'updated_at', 'posted_by')
+        fields = "__all__"
+        read_only_fields = ("job_id", "created_at", "updated_at", "posted_by")
 
-    # ---------- detail getters (these fix your AttributeError) ----------
+    # ---------- simple getters ----------
     def get_teams_detail(self, obj):
-        if obj.teams_id:
-            return {"id": obj.teams_id, "name": getattr(obj.teams, "name", None)}
+        if obj.teams:
+            return {"id": obj.teams.id, "name": getattr(obj.teams, "name", None)}
         return None
 
     def get_employments_types_detail(self, obj):
-        if obj.employments_types_id:
-            return {"id": obj.employments_types_id, "name": getattr(obj.employments_types, "name", None)}
+        if obj.employments_types:
+            return {"id": obj.employments_types.id, "name": getattr(obj.employments_types, "name", None)}
         return None
 
     def get_posted_by_detail(self, obj):
-        if obj.posted_by_id:
+        if obj.posted_by:
             u = obj.posted_by
-            name = getattr(u, "name", None) or getattr(u, "full_name", None) or getattr(u, "username", None) or getattr(u, "email", None)
-            return {"id": obj.posted_by_id, "email": getattr(u, "email", None), "name": name}
+            return {"id": u.id, "email": getattr(u, "email", None), "name": getattr(u, "name", None)}
         return None
-
-    def get_manager_detail(self, obj):
-        if obj.manager_id:
-            # adjust what you want to show
-            return {"id": obj.manager_id, "email": getattr(obj.manager, "email", None)}
-        return None
-
-    def get_hiring_manager_detail(self, obj):
-        if obj.hiring_manager_id:
-            return {"id": obj.hiring_manager_id, "email": getattr(obj.hiring_manager, "email", None)}
-        return None
-
-    def get_hr_team_members_detail(self, obj):
-        if hasattr(obj, "hr_team_members"):
-            return [{"id": u.id, "display": str(u)} for u in obj.hr_team_members.all()]
-        return []
 
     def get_skills_details(self, obj):
-        if hasattr(obj, "skills_required"):
-            return [{"id": s.id, "name": getattr(s, "name", str(s))} for s in obj.skills_required.all()]
-        return []
+        return [{"id": s.id, "name": getattr(s, "name", None)} for s in obj.skills_required.all()]
 
-    # ---------- simple sanitizers ----------
-    def validate_Salary_range(self, value):
-        return value.strip() if isinstance(value, str) else value
-
-    def validate_Experience_required(self, value):
-        return value.strip() if isinstance(value, str) else value
-
-    # ---------- cross-field validation ----------
-    def validate(self, attrs):
-        # fallback to instance for partial updates
-        manager = attrs.get('manager') or getattr(self.instance, 'manager', None)
-        hiring_manager = attrs.get('hiring_manager') or getattr(self.instance, 'hiring_manager', None)
-        hrs = attrs.get('hr_team_members', None)
-
-        if manager and getattr(manager, 'role', None) != UserProfile.ROLE_MANAGER:
-            raise serializers.ValidationError({"manager": "Selected user is not a Manager."})
-
-        if hiring_manager:
-            if getattr(hiring_manager, 'role', None) != UserProfile.Hiring_Manager:
-                raise serializers.ValidationError({"hiring_manager": "Selected user is not a HiringManager."})
-            if manager and getattr(hiring_manager, 'created_by_manager_id', None) != manager.id:
-                raise serializers.ValidationError({"hiring_manager": "HiringManager must be created by the selected Manager."})
-
-        if hrs is not None:
-            for hr in hrs:
-                if getattr(hr, 'role', None) != UserProfile.ROLE_HR:
-                    raise serializers.ValidationError({"hr_team_members": f"User {hr.id} is not an HR."})
-                if manager and getattr(hr, 'created_by_manager_id', None) != manager.id:
-                    raise serializers.ValidationError({"hr_team_members": f"HR {hr.id} must be created by the selected Manager."})
-
-        return attrs
-
-    # ---------- write hooks ----------
+    # ---------- create / update ----------
     def create(self, validated_data):
-        # set posted_by from request user
         req = self.context.get("request")
-        if req and req.user and req.user.is_authenticated:
+        if req and getattr(req, "user", None) and req.user.is_authenticated:
             validated_data["posted_by"] = req.user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        # keep job_id immutable
         validated_data.pop("job_id", None)
         return super().update(instance, validated_data)
     
