@@ -123,36 +123,39 @@ class addjobSerializer(serializers.ModelSerializer):
     teams = serializers.PrimaryKeyRelatedField(
         queryset=Teams.objects.all(), required=False, allow_null=True, write_only=True
     )
-    employments_types = serializers.SlugRelatedField(
-        slug_field='code',               # use the field on Job_types that stores "full_time"
+
+    # ✔ back to PK based lookup (integer or UUID PK)
+    employments_types = serializers.PrimaryKeyRelatedField(
         queryset=Job_types.objects.all(),
-        allow_null=True, required=False, write_only=True
+        required=False,
+        allow_null=True,
+        write_only=True
     )
+
     posted_by = serializers.PrimaryKeyRelatedField(read_only=True)
 
     skills_required = serializers.PrimaryKeyRelatedField(
         queryset=Skills.objects.all(), many=True, required=False, write_only=True
     )
 
-    # assume these fields reference TeamsUser model
+    # TeamsUser relations using graph_id Slug
     manager = serializers.SlugRelatedField(
-        slug_field='graph_id',           # TeamsUser.graph_id must be unique
+        slug_field='graph_id',
         queryset=TeamsUser.objects.all(),
         allow_null=True, required=False, write_only=True
     )
     hiring_manager = serializers.SlugRelatedField(
-    slug_field='graph_id',
-    queryset=TeamsUser.objects.all(),
-    allow_null=True, required=False, write_only=True
+        slug_field='graph_id',
+        queryset=TeamsUser.objects.all(),
+        allow_null=True, required=False, write_only=True
     )
-
     hr_team_members = serializers.SlugRelatedField(
-    slug_field='graph_id',
-    queryset=TeamsUser.objects.all(),
-    many=True, required=False, write_only=True
+        slug_field='graph_id',
+        queryset=TeamsUser.objects.all(),
+        many=True, required=False, write_only=True
     )
 
-    # --- read-only detail fields using your existing TeamsUserSerializer ---
+    # --- read-only detail fields ---
     teams_detail = serializers.SerializerMethodField()
     employments_types_detail = serializers.SerializerMethodField()
     posted_by_detail = serializers.SerializerMethodField()
@@ -186,7 +189,10 @@ class addjobSerializer(serializers.ModelSerializer):
         return None
 
     def get_skills_details(self, obj):
-        return [{"id": s.id, "name": getattr(s, "name", None)} for s in obj.skills_required.all()]
+        return [
+            {"id": s.id, "name": getattr(s, "name", None)}
+            for s in obj.skills_required.all()
+        ]
 
     # ---------- create / update ----------
     def create(self, validated_data):
@@ -198,6 +204,7 @@ class addjobSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop("job_id", None)
         return super().update(instance, validated_data)
+
     
 
 class QuestionSerializer(serializers.ModelSerializer):
