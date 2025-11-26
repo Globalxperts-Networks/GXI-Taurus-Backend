@@ -23,6 +23,7 @@ urlpatterns = [
     path("hr/chat-history/<int:pk>/", ChatHistoryAPIView.as_view(), name="chat-histor"),
     path("role_type_counts/", RoleTypeCountAPIView.as_view(), name="role-type-counts"),
     path("public/submit-form/", PublicFormAPIView.as_view(), name="public-submit-form"),
+    path("candidates/upload-csv/", UploadCandidatesCSVAPIView.as_view()),
 
 
 
