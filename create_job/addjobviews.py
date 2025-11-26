@@ -84,6 +84,7 @@ class PublicJobAPIView(APIView):
             add_job.objects
             .select_related('teams', 'employments_types', 'posted_by', 'manager', 'hiring_manager')
             .prefetch_related('hr_team_members')
+            .filter(is_active=True)
             .order_by('-created_at')  # <-- default ordering
         )
 

@@ -734,7 +734,30 @@ from .csv_reader import read_uploaded_file
 
 BATCH_SIZE = 100
 
+def extract_group(row, prefix, fields):
+    result = []
+    index = 1
 
+    while True:
+        item = {}
+        empty = True
+
+        for f in fields:
+            col = f"{prefix}_{index}_{f}"
+            value = row.get(col, "")
+
+            if value not in ("", None):
+                empty = False
+
+            item[f] = value or ""
+
+        if empty:
+            break
+
+        result.append(item)
+        index += 1
+
+    return result
 class UploadCandidatesCSVAPIView(APIView):
     def post(self, request):
         csv_file = request.FILES.get("file")
@@ -765,10 +788,43 @@ class UploadCandidatesCSVAPIView(APIView):
 
                 job_instance = job_cache[job_title]
 
-                submission_json = {
-                    k: v for k, v in row.items()
-                    if k.lower() != "job title"
-                }
+                education_history = extract_group(
+                    row,
+                    prefix="Education",
+                    fields=["Qualification", "University", "Start_Date", "End_Date", "Score"]
+                )
+
+                professional_experience = extract_group(
+                    row,
+                    prefix="Experience",
+                    fields=["Role", "Organisation", "Start_Date", "End_Date",
+                            "Location", "CTC_INR", "Responsibilities"]
+                )
+                # submission_json = {
+                #     k: v for k, v in row.items()
+                #     if k.lower() != "job title"
+                # }
+                submission_json = {}
+
+                for k, v in row.items():
+                    key_lower = k.lower()
+                    if key_lower == "job title":
+                        continue
+
+                    if key_lower.startswith("education_"):
+                        continue
+
+                    if key_lower.startswith("experience_"):
+                        continue
+
+                    submission_json[k] = v
+
+
+                submission_json["status"] = 'Scouting'
+
+                submission_json["State"] = row.get("State", "")
+                submission_json["Education_History"] = education_history
+                submission_json["Professional_Experience"] = professional_experience
 
                 submission_json["Role_Type"] = job_title
                 submission_json["job_id"] = job_instance.job_id if job_instance else None
