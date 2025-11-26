@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from superadmin.models import UserProfile  # just for role constants
+from microsoft_teams.models import TeamsUser
 
 
 # Optional reusable timestamp mixin (left as-is per your code)
@@ -93,11 +94,11 @@ class add_job(TimeStampedModel):
     skills_required = models.ManyToManyField(Skills, related_name='jobs', blank=True)
     last_hiring_date = models.DateField(null=True, blank=True, db_index=True)
     teams = models.ForeignKey(Teams,on_delete=models.CASCADE,null=True,blank=True,related_name='jobs',db_index=True)
-    posted_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True,related_name='posted_jobs',db_index=True)
+    posted_by = models.ForeignKey(TeamsUser,on_delete=models.SET_NULL,null=True,blank=True,related_name='posted_jobs',db_index=True)
     employments_types = models.ForeignKey(Job_types,on_delete=models.CASCADE,null=True,blank=True,related_name='jobs',db_index=True)
-    manager = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True,related_name='jobs_managed',db_index=True)
-    hiring_manager = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True,related_name='jobs_as_hiring_manager',db_index=True)
-    hr_team_members = models.ManyToManyField(settings.AUTH_USER_MODEL,related_name='jobs_as_hr')
+    manager = models.ForeignKey(TeamsUser,on_delete=models.SET_NULL,null=True,blank=True,related_name='jobs_managed',db_index=True)
+    hiring_manager = models.ForeignKey(TeamsUser,on_delete=models.SET_NULL,null=True,blank=True,related_name='jobs_as_hiring_manager',db_index=True)
+    hr_team_members = models.ManyToManyField(TeamsUser,related_name='jobs_as_hr')
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
