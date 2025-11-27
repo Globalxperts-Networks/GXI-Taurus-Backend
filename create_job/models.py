@@ -139,6 +139,17 @@ class add_job(TimeStampedModel):
             models.UniqueConstraint(fields=['job_id'], name='unique_job_id_constraint'),
         ]
 
+class JobSkillPreference(models.Model):
+    job = models.ForeignKey("add_job", on_delete=models.CASCADE,related_name="skill_preferences")
+    skill = models.ForeignKey("Skills", on_delete=models.CASCADE)
+    must = models.BooleanField(default=False)
+    good = models.BooleanField(default=False)
+    rating = models.PositiveIntegerField(null=True, blank=True)  # only if good
+
+    def __str__(self):
+        return self.skill.name
+
+
 class Question(models.Model):
 
     QUESTION_TYPES = [
