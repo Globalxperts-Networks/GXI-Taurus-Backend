@@ -22,12 +22,13 @@ from .serializers import FormDataSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage,get_connection
+from rest_framework.parsers import JSONParser
 
 logger = logging.getLogger(__name__)
 
 
 class FormDataAPIView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser,JSONParser)
     def send_status_email(self, candidate_email, candidate_name, current_status, phase=None,
                           interview_date=None, interview_time=None, joining_date=None, is_new_candidate=False):
         if not candidate_email:
@@ -407,7 +408,76 @@ class FormDataAPIView(APIView):
                 "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
+            
+    def patch(self, request, form_id, ):
+        try:
+            
+            form = FormData.objects.get(id=form_id)
 
+            submission = form.submission_data
+
+            # -----------------------------
+            # Detect which section to update
+            # -----------------------------
+            section = request.data.get("section")
+            index = int(request.data.get("index"))
+
+            if not section:
+                return Response({"error": "Missing 'section' in body"}, status=400)
+
+            if section == "education":
+                key_name = "Education_History"
+                allowed_fields = [
+                    "Score", "End_Date", "Start_Date", "University",
+                    "Qualification", "Specialisation", "Currently_Studying"
+                ]
+
+            elif section == "experience":
+                key_name = "Professional_Experience"
+                allowed_fields = [
+                    "Role", "CTC_INR", "End_Date", "Location",
+                    "Is_Current", "Start_Date",
+                    "Organisation", "Responsibilities"
+                ]
+            
+            else:
+                return Response({"error": "Invalid section"}, status=400)
+
+            # remove "section" from body
+            filtered_data = {
+                k: v for k, v in request.data.items()
+                if k in allowed_fields
+            }
+
+            # Current list
+            data_list = submission.get(key_name, [])
+
+            # ADD NEW
+            if index == len(data_list):
+                data_list.append(filtered_data)
+
+            # UPDATE EXISTING
+            elif 0 <= index < len(data_list):
+                for key, value in filtered_data.items():
+                    data_list[index][key] = value
+            else:
+                return Response({"error": "Invalid index"}, status=400)
+
+            # Save back
+            submission[key_name] = data_list
+            form.submission_data = submission
+            form.save()
+
+            return Response(
+                {"message": f"{section} updated", key_name: data_list},
+                status=200
+            )
+
+        except FormData.DoesNotExist:
+            return Response({"error": "Form not found"}, status=404)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 
 

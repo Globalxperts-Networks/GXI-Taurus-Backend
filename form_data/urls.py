@@ -5,6 +5,7 @@ from .meetviews import GoogleAuthInit, GoogleAuthCallback, GoogleTokenStatus, Cr
 
 urlpatterns = [
     path('formdata/', FormDataAPIView.as_view(), name='formdata'),
+    path("formdata/<int:form_id>/section/", FormDataAPIView.as_view()),
     path('formdata/<int:pk>/', FormDataAPIView.as_view(), name='formdata-detail'),
     path('schedule-interview/', ScheduleInterviewAPIView.as_view(), name='schedule-interview'),
     path('send-whatsapp/<int:form_id>/', SendWhatsappMessageAPIView.as_view(), name='send_whatsapp'),
