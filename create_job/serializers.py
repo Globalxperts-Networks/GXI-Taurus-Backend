@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job, Question , Country , State
+from .models import Skills, Department, Job_types, Location, Teams, add_job, Question , Country , State,JobSkillPreference
 from superadmin.models import UserProfile  # role constants
 from microsoft_teams.models import TeamsUser
 from microsoft_teams.serializers import TeamsUserSerializer
@@ -22,7 +22,7 @@ class SkillsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Skills
         fields = ["id", "name"]
-
+        
 
 class Job_typesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -133,6 +133,8 @@ class addjobSerializer(serializers.ModelSerializer):
     )
 
     posted_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    skill_preferences = serializers.ListField(required=False, write_only=True)
+
 
     skills_required = serializers.PrimaryKeyRelatedField(
         queryset=Skills.objects.all(), many=True, required=False, write_only=True
@@ -165,6 +167,9 @@ class addjobSerializer(serializers.ModelSerializer):
     hr_team_members_detail = TeamsUserSerializer(source="hr_team_members", many=True, read_only=True)
 
     skills_details = serializers.SerializerMethodField()
+    
+
+
 
     class Meta:
         model = add_job
@@ -188,18 +193,56 @@ class addjobSerializer(serializers.ModelSerializer):
             return {"id": u.id, "email": getattr(u, "email", None), "name": getattr(u, "name", None)}
         return None
 
+    # def get_skills_details(self, obj):
+    #     return [
+    #         {"id": s.id, "name": getattr(s, "name", None)}
+    #         for s in obj.skills_required.all()
+    #     ]
     def get_skills_details(self, obj):
         return [
-            {"id": s.id, "name": getattr(s, "name", None)}
-            for s in obj.skills_required.all()
+            {
+                "id": p.skill.id,
+                "name": p.skill.name,
+                "must": p.must,
+                "good": p.good,
+                "rating": p.rating
+            }
+            for p in obj.skill_preferences.all()
         ]
 
     # ---------- create / update ----------
+    # def create(self, validated_data):
+    #     req = self.context.get("request")
+    #     if req and getattr(req, "user", None) and req.user.is_authenticated:
+    #         validated_data["posted_by"] = req.user
+    #     return super().create(validated_data)
+    
     def create(self, validated_data):
+        skill_pref_list = validated_data.pop("skill_preferences", [])
+        m2m_skills = validated_data.pop("skills_required", [])
+
         req = self.context.get("request")
-        if req and getattr(req, "user", None) and req.user.is_authenticated:
+        if req and req.user.is_authenticated:
             validated_data["posted_by"] = req.user
-        return super().create(validated_data)
+
+        job = super().create(validated_data)
+
+        # Save M2M normally
+        if m2m_skills:
+            job.skills_required.set(m2m_skills)
+
+        # Save skill preferences
+        for pref in skill_pref_list:
+            JobSkillPreference.objects.create(
+                job=job,
+                skill=Skills.objects.get(id=pref["skill"]),
+                must=pref.get("must", False),
+                good=pref.get("good", False),
+                rating=pref.get("rating"),
+            )
+
+        return job
+
 
     def update(self, instance, validated_data):
         validated_data.pop("job_id", None)
