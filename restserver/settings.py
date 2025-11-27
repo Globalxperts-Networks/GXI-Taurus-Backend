@@ -179,10 +179,10 @@ ASGI_APPLICATION = 'restserver.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql', 
-        'NAME': 'hiring_backend',                          
-        'USER': 'postgres',                
-        'PASSWORD': 'Xperts@123',                
-        'HOST': 'localhost',                  
+        'NAME': 'gxi_beckend',                          
+        'USER': 'gxi',                
+        'PASSWORD': '140806',                
+        'HOST': '3.85.242.139',                  
         'PORT': '5432', 
 
     }
