@@ -1,206 +1,273 @@
 import os
-import sys
-import argparse
-import requests
 import json
-import smtplib
-from email.message import EmailMessage
-from typing import List, Optional
+import requests
+from flask import Flask, session, redirect, request, url_for, jsonify, abort
+import msal
+from urllib.parse import urlencode
 
-# ----------------------
-# Config (from env)
-# ----------------------
-AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID", "b6bc0503-84d4-4cab-9502-058795a1a3ce")
-AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID", "bb5aa073-9901-4f94-8935-dc3aa37b5855")
-AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", "pXW8Q~NBTAUAaMRy9TH52LNv_TX1AuxADDyWLbDO")  # must set securely
 
-GRAPH_TOKEN_URL = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token"
-GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+# AZURE_TENANT_ID = "aadc5d1f-19d3-4ced-a0e5-0aae419ec4d2"
+# AZURE_CLIENT_ID = "e96d9338-9d3e-4733-98cd-d2d600f45abf"
+# AZURE_CLIENT_SECRET = "ZZw8Q~S6e_oKWvIBTyde7kAUURJCCeNf2zTLxcs2"
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.office365.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = "noreply@gxinetworks.com"
-SMTP_PASSWORD ="August@082024"
+# ---------- CONFIG ----------
+# You can also set these as environment variables
+CLIENT_ID = "e96d9338-9d3e-4733-98cd-d2d600f45abf"
+TENANT_ID =  "aadc5d1f-19d3-4ced-a0e5-0aae419ec4d2"
+CLIENT_SECRET = "ZZw8Q~S6e_oKWvIBTyde7kAUURJCCeNf2zTLxcs2"
 
-DEFAULT_FROM = SMTP_USER or "noreply@example.com"
+REDIRECT_PATH = "/getAToken"   # must match Azure redirect URI
+REDIRECT_URI = f"http://localhost:5000{REDIRECT_PATH}"
+AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+SCOPES = ["User.Read", "OnlineMeetings.Read", "OnlineMeetingRecording.Read.All", "Files.Read"]
 
-# ----------------------
-# Defaults (user provided)
-# ----------------------
-DEFAULT_TO = ["jaijhavats32@gmail.com"]
-DEFAULT_CC = ["jaijhavats95@gmail.com"]
-DEFAULT_SUBJECT = "Meeting for Python"
+# Where to save downloaded recordings
+DOWNLOAD_FOLDER = os.path.abspath("./downloads")
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# ----------------------
-# Helpers
-# ----------------------
-def get_app_token() -> str:
-    if not AZURE_CLIENT_SECRET:
-        raise RuntimeError("AZURE_CLIENT_SECRET is not set in environment. Set it before running.")
-    data = {
-        "client_id": AZURE_CLIENT_ID,
-        "client_secret": AZURE_CLIENT_SECRET,
-        "scope": "https://graph.microsoft.com/.default",
-        "grant_type": "client_credentials",
-    }
-    r = requests.post(GRAPH_TOKEN_URL, data=data, timeout=15)
-    if r.status_code != 200:
-        raise RuntimeError(f"Token request failed ({r.status_code}): {r.text}")
-    token = r.json().get("access_token")
-    if not token:
-        raise RuntimeError(f"No access_token in token response: {r.text}")
-    return token
+# Basic Flask session secret (in prod use a secure random value)
+FLASK_SECRET = os.environ.get("FLASK_SECRET", "dev_secret_change_me")
 
-def get_user_object_id_by_upn(token: str, upn: str) -> Optional[str]:
-    """
-    Lookup user object id from UPN (email). Returns objectId or None.
-    """
-    url = f"{GRAPH_BASE}/users/{upn}"
-    headers = {"Authorization": f"Bearer {token}"}
-    r = requests.get(url, headers=headers, timeout=10)
-    if r.status_code == 200:
-        return r.json().get("id")
-    # return None and log message
-    print(f"Warning: unable to lookup user {upn}. Status: {r.status_code}. Body: {r.text}", file=sys.stderr)
-    return None
+# ---------- END CONFIG ----------
 
-def create_online_meeting(token: str, user_object_id: str, subject: str, start: str, end: str) -> dict:
-    url = f"{GRAPH_BASE}/users/{user_object_id}/onlineMeetings"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    body = {"startDateTime": start, "endDateTime": end, "subject": subject}
-    r = requests.post(url, headers=headers, json=body, timeout=20)
-    if r.status_code not in (200, 201):
-        # surface Graph error
-        raise RuntimeError(f"create_online_meeting failed ({r.status_code}): {r.text}")
-    return r.json()
+app = Flask(__name__)
+app.secret_key = FLASK_SECRET
 
-def create_calendar_event(token: str, organizer_upn: str, subject: str, start: str, end: str, attendees: List[str]) -> dict:
-    url = f"{GRAPH_BASE}/users/{organizer_upn}/events"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    attendees_payload = []
-    for a in attendees:
-        if a:
-            attendees_payload.append({"emailAddress": {"address": a, "name": ""}, "type": "required"})
-    body = {
-        "subject": subject,
-        "start": {"dateTime": start, "timeZone": "UTC"},
-        "end": {"dateTime": end, "timeZone": "UTC"},
-        "isOnlineMeeting": True,
-        "onlineMeetingProvider": "teamsForBusiness",
-        "attendees": attendees_payload,
-    }
-    r = requests.post(url, headers=headers, json=body, timeout=20)
-    if r.status_code not in (200, 201):
-        raise RuntimeError(f"create_calendar_event failed ({r.status_code}): {r.text}")
-    return r.json()
+# MSAL app factory (ConfidentialClientApplication for auth-code flow)
+def _build_msal_app(cache=None):
+    return msal.ConfidentialClientApplication(
+        client_id=CLIENT_ID,
+        client_credential=CLIENT_SECRET,
+        authority=AUTHORITY,
+        token_cache=cache
+    )
 
-def extract_join_url(resp: dict) -> Optional[str]:
-    if not isinstance(resp, dict):
+def _build_auth_url(state=None):
+    app_msal = _build_msal_app()
+    return app_msal.get_authorization_request_url(
+        scopes=SCOPES,
+        state=state or "state",
+        redirect_uri=REDIRECT_URI
+    )
+
+def _acquire_token_by_auth_code(auth_code):
+    app_msal = _build_msal_app()
+    result = app_msal.acquire_token_by_authorization_code(
+        auth_code,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI
+    )
+    return result
+
+def _token_from_session():
+    """Return access_token if present and not expired (msal cache not used here)."""
+    tok = session.get("token_response")
+    if not tok:
         return None
-    # common fields
-    for key in ("joinWebUrl", "joinUrl", "onlineMeetingUrl"):
-        if resp.get(key):
-            return resp.get(key)
-    om = resp.get("onlineMeeting")
-    if isinstance(om, dict):
-        return om.get("joinUrl") or om.get("joinWebUrl")
-    return None
+    return tok.get("access_token")
 
-def send_email(smtp_user: str, smtp_pass: str, to_list: List[str], cc_list: List[str], subject: str, body: str):
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("SMTP_USER or SMTP_PASSWORD not set in environment.")
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = DEFAULT_FROM
-    msg["To"] = ", ".join(to_list)
-    if cc_list:
-        msg["Cc"] = ", ".join(cc_list)
-    msg.set_content(body)
-    # send
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.login(smtp_user, smtp_pass)
-        smtp.send_message(msg)
+# ---------- Routes ----------
 
-# ----------------------
-# CLI / Main
-# ----------------------
-def parse_args():
-    p = argparse.ArgumentParser(description="Create Teams meeting and email link")
-    p.add_argument("--mode", choices=["onlineMeeting", "calendarEvent"], default="calendarEvent",
-                   help="onlineMeeting (standalone) or calendarEvent (recommended)")
-    p.add_argument("--organizer-upn", help="Organizer UPN / email (for calendarEvent or lookup).")
-    p.add_argument("--organizer-object-id", help="Organizer AAD object id (for onlineMeeting). If not provided for onlineMeeting, the script tries to lookup by --organizer-upn.")
-    p.add_argument("--subject", default=DEFAULT_SUBJECT)
-    p.add_argument("--start", required=True, help="Start ISO datetime, e.g. 2025-11-20T10:00:00Z")
-    p.add_argument("--end", required=True, help="End ISO datetime, e.g. 2025-11-20T11:00:00Z")
-    p.add_argument("--attendees", default="", help="Comma-separated attendee emails (for calendar event)")
-    p.add_argument("--to", default=",".join(DEFAULT_TO), help="Comma-separated To emails for notification email")
-    p.add_argument("--cc", default=",".join(DEFAULT_CC), help="Comma-separated CC emails for notification email")
-    p.add_argument("--send-email", action="store_true", help="Send email notification with join link")
-    return p.parse_args()
+@app.route("/")
+def index():
+    return "<h3>Teams Recording Fetcher</h3>" \
+           "<p>1) <a href='/login'>Login with Microsoft (delegated)</a></p>" \
+           "<p>2) After login, call <code>/fetch?meeting_id=&lt;MEETING_ID&gt;</code> to get recording links</p>"
 
-def main():
-    args = parse_args()
-    attendees = [x.strip() for x in args.attendees.split(",") if x.strip()]
-    to_list = [x.strip() for x in args.to.split(",") if x.strip()]
-    cc_list = [x.strip() for x in args.cc.split(",") if x.strip()]
+@app.route("/login")
+def login():
+    auth_url = _build_auth_url(state="12345")
+    return redirect(auth_url)
 
-    # Basic env checks
-    if not AZURE_CLIENT_SECRET:
-        print("ERROR: AZURE_CLIENT_SECRET must be set as an environment variable.", file=sys.stderr)
-        sys.exit(1)
-    if args.send_email and (not SMTP_USER or not SMTP_PASSWORD):
-        print("ERROR: SMTP_USER and SMTP_PASSWORD must be set in environment to send email.", file=sys.stderr)
-        sys.exit(1)
+@app.route(REDIRECT_PATH)
+def authorized():
+    # Called by MS identity platform with code
+    error = request.args.get("error")
+    if error:
+        return f"Error: {error} - {request.args.get('error_description')}", 400
+
+    code = request.args.get("code")
+    if not code:
+        return "No code received", 400
+
+    result = _acquire_token_by_auth_code(code)
+    if "error" in result:
+        return f"Token acquisition failed: {result}", 500
+
+    # Save tokens in session - in prod store securely server-side
+    session["token_response"] = result
+    session["user"] = result.get("id_token_claims", {}).get("preferred_username")
+    return f"Login successful for {session.get('user')} — now call /fetch?meeting_id=... or return to <a href='/'>home</a>"
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+def _call_graph(access_token, method, path, params=None, json_body=None, stream=False):
+    url = f"https://graph.microsoft.com/v1.0{path}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.request(method, url, headers=headers, params=params, json=json_body, stream=stream, timeout=60)
+    # Let caller handle HTTP errors; raise for non-2xx
+    if resp.status_code >= 400:
+        # try to provide helpful info
+        try:
+            return {"error": resp.json(), "status_code": resp.status_code}
+        except Exception:
+            return {"error": resp.text, "status_code": resp.status_code}
+    return resp
+
+def _extract_recording_info_from_online_meeting(obj):
+    """
+    Try a few common places for recording info in the onlineMeeting JSON.
+    Returns list of dicts: { 'downloadUrl': ..., 'driveItemId': ..., 'description': ... }
+    """
+    results = []
+    # 1) recordings property
+    recs = obj.get("recordings") or obj.get("recording") or []
+    if isinstance(recs, dict):
+        recs = [recs]
+    if isinstance(recs, list):
+        for r in recs:
+            # common keys: contentUrl, downloadUrl, @microsoft.graph.downloadUrl, driveItem (id)
+            dl = r.get("contentUrl") or r.get("downloadUrl") or r.get("@microsoft.graph.downloadUrl")
+            drive_item = None
+            # sometimes stored as resource -> driveItem -> id
+            if not dl:
+                # inspect nested objects
+                if isinstance(r, dict):
+                    for k in ("resource", "driveItem", "resourceLocation"):
+                        cand = r.get(k) or {}
+                        if isinstance(cand, dict):
+                            drive_item = cand.get("id") or cand.get("driveItemId") or drive_item
+            results.append({"downloadUrl": dl, "driveItemId": drive_item, "raw": r, "note": "from recordings array"})
+
+    # 2) callRecords or resourceLocation fields (sometimes outside recordings)
+    # try common keys
+    for k in ("callRecords", "recording", "resourceLocation", "recordingAssets"):
+        v = obj.get(k)
+        if v:
+            if isinstance(v, dict):
+                dl = v.get("contentUrl") or v.get("downloadUrl") or v.get("@microsoft.graph.downloadUrl")
+                if dl:
+                    results.append({"downloadUrl": dl, "driveItemId": None, "raw": v, "note": f"from {k}"})
+            elif isinstance(v, list):
+                for item in v:
+                    dl = item.get("contentUrl") or item.get("downloadUrl") or item.get("@microsoft.graph.downloadUrl")
+                    results.append({"downloadUrl": dl, "driveItemId": item.get("id"), "raw": item, "note": f"from {k}[list]"})
+    # 3) if empty, return empty list
+    return results
+
+@app.route("/fetch")
+def fetch_meeting():
+    """
+    Query params:
+      meeting_id (required) - the Graph onlineMeeting id (the long string)
+      download (optional) - 1 to download first recording found
+    """
+    meeting_id = request.args.get("meeting_id")
+    if not meeting_id:
+        return jsonify({"error": "meeting_id required as query param ?meeting_id=<id>"}), 400
+
+    access_token = _token_from_session()
+    if not access_token:
+        return jsonify({"error": "not authenticated. visit /login and sign in as the organizer first."}), 401
+
+    # call Graph: GET /me/onlineMeetings/{meeting_id}
+    path = f"/me/onlineMeetings/{meeting_id}"
+    resp = _call_graph(access_token, "GET", path)
+    if isinstance(resp, dict) and resp.get("status_code"):
+        # error object returned
+        return jsonify({"error": "graph_error", "details": resp}), 502
 
     try:
-        print("Requesting app token...")
-        token = get_app_token()
-        print("Token acquired.")
+        om = resp.json()
+    except Exception:
+        return jsonify({"error": "unable to parse graph response", "raw": resp.text}), 500
 
-        resp = None
-        join_url = None
+    # Attempt to extract recording links
+    recs = _extract_recording_info_from_online_meeting(om)
+    # If none found, try searching drive for "Recording" items (organizer's drive)
+    found = recs.copy()
+    if not found:
+        # fallback: search user's drive for likely recording files (may be noisy)
+        search_path = "/me/drive/root/search(q='Recording')"
+        sresp = _call_graph(access_token, "GET", search_path)
+        if not (isinstance(sresp, dict) and sresp.get("status_code")):
+            try:
+                j = sresp.json()
+                for it in j.get("value", []):
+                    dl = it.get("@microsoft.graph.downloadUrl")
+                    if dl:
+                        found.append({"downloadUrl": dl, "driveItemId": it.get("id"), "raw": it, "note": "from drive search"})
+            except Exception:
+                pass
 
-        if args.mode == "onlineMeeting":
-            user_obj = args.organizer_object_id
-            if not user_obj:
-                if not args.organizer_upn:
-                    raise RuntimeError("For onlineMeeting mode provide --organizer-object-id or --organizer-upn (to lookup).")
-                print(f"Looking up object id for {args.organizer_upn} ...")
-                user_obj = get_user_object_id_by_upn(token, args.organizer_upn)
-                if not user_obj:
-                    raise RuntimeError(f"Could not find object id for {args.organizer_upn}.")
-            print(f"Creating onlineMeeting for object id: {user_obj} ...")
-            resp = create_online_meeting(token, user_obj, args.subject, args.start, args.end)
+    result = {
+        "meeting": om,
+        "recordings_found": found
+    }
 
-        else:  # calendarEvent
-            if not args.organizer_upn:
-                raise RuntimeError("For calendarEvent mode provide --organizer-upn (user email).")
-            print(f"Creating calendar event for {args.organizer_upn} ...")
-            resp = create_calendar_event(token, args.organizer_upn, args.subject, args.start, args.end, attendees)
-
-        print("Graph response (truncated):")
-        print(json.dumps(resp, indent=2)[:4000] + ("\n... (truncated)" if len(json.dumps(resp))>4000 else ""))
-
-        join_url = extract_join_url(resp)
-        if join_url:
-            print("\nJoin URL:", join_url)
+    # If download requested, attempt to download the first found recording
+    download_flag = request.args.get("download", "0") in ("1", "true", "yes")
+    if download_flag and found:
+        first = found[0]
+        dl = first.get("downloadUrl")
+        drive_item = first.get("driveItemId")
+        out_info = {}
+        if dl:
+            # pre-authenticated download URL -> fetch directly
+            r = requests.get(dl, stream=True, timeout=60)
+            if r.status_code >= 400:
+                out_info["download_error"] = {"status": r.status_code, "text": r.text}
+            else:
+                # save to file
+                filename = f"recording_{meeting_id[:8]}.bin"
+                out_path = os.path.join(DOWNLOAD_FOLDER, filename)
+                with open(out_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=64*1024):
+                        if chunk:
+                            f.write(chunk)
+                out_info["downloaded_to"] = out_path
+                out_info["content_type"] = r.headers.get("Content-Type")
+                out_info["size"] = os.path.getsize(out_path)
+        elif drive_item:
+            # use Graph drive content endpoint with delegated token
+            drive_path = f"/me/drive/items/{drive_item}/content"
+            file_resp = _call_graph(access_token, "GET", drive_path, stream=True)
+            if isinstance(file_resp, dict) and file_resp.get("status_code"):
+                out_info["download_error"] = file_resp
+            else:
+                filename = f"recording_{meeting_id[:8]}.bin"
+                out_path = os.path.join(DOWNLOAD_FOLDER, filename)
+                with open(out_path, "wb") as f:
+                    for chunk in file_resp.iter_content(chunk_size=64*1024):
+                        if chunk:
+                            f.write(chunk)
+                out_info["downloaded_to"] = out_path
+                out_info["content_type"] = file_resp.headers.get("Content-Type")
+                out_info["size"] = os.path.getsize(out_path)
         else:
-            print("\nWARNING: join URL not found in Graph response. Inspect response above.")
+            out_info["error"] = "no_downloadable_link_found"
+        result["download_attempt"] = out_info
 
-        if args.send_email and to_list:
-            email_body = f"{args.subject}\n\nPlease join the Teams meeting:\n\n{join_url or 'JOIN LINK NOT FOUND'}\n\nRegards,"
-            print("Sending email notification...")
-            send_email(SMTP_USER, SMTP_PASSWORD, to_list, cc_list, args.subject, email_body)
-            print("Email sent to:", to_list, "cc:", cc_list)
+    return jsonify(result)
 
-        print("\nDone.")
-
-    except Exception as e:
-        print("ERROR:", str(e), file=sys.stderr)
-        sys.exit(2)
+# Simple health route
+@app.route("/whoami")
+def whoami():
+    user = session.get("user")
+    return jsonify({"user": user, "authenticated": bool(session.get("token_response"))})
 
 if __name__ == "__main__":
-    main()
+    # Basic safety: ensure config provided
+    missing = []
+    for k,v in (("CLIENT_ID", CLIENT_ID), ("CLIENT_SECRET", CLIENT_SECRET), ("TENANT_ID", TENANT_ID)):
+        if not v or v.startswith("<YOUR_"):
+            missing.append(k)
+    if missing:
+        print("Please set the Azure AD config at top of the script or via environment variables for:", missing)
+        print("Edit the script or set AZ_CLIENT_ID, AZ_CLIENT_SECRET, AZ_TENANT_ID env vars.")
+        exit(1)
+
+    app.run(host="0.0.0.0", port=5000, debug=True)
