@@ -804,6 +804,7 @@ from .csv_reader import read_uploaded_file
 
 BATCH_SIZE = 100
 
+
 def extract_group(row, prefix, fields):
     result = []
     index = 1
@@ -828,76 +829,142 @@ def extract_group(row, prefix, fields):
         index += 1
 
     return result
+
+def clean_value(value):
+    if value is None:
+        return ""
+    value_str = str(value).strip()
+    if value_str.lower() in ["not available", "n/a", "na", "none", "not specified"]:
+        return ""
+    return value_str
+
 class UploadCandidatesCSVAPIView(APIView):
     def post(self, request):
+
         csv_file = request.FILES.get("file")
         if not csv_file:
-            return Response({"error": "Please upload a file under key 'file'."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Please upload a file under key 'file'."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        if not (csv_file.name.lower().endswith(".csv") or csv_file.name.lower().endswith(".xlsx") or csv_file.name.lower().endswith(".xls")):
+        if not (
+            csv_file.name.lower().endswith(".csv")
+            or csv_file.name.lower().endswith(".xlsx")
+            or csv_file.name.lower().endswith(".xls")
+        ):
             return Response({"error": "Only CSV, XLSX, and XLS files allowed."}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             rows = read_uploaded_file(csv_file)
         except Exception as e:
-            return Response({"error": f"Error reading CSV: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"Error reading CSV: {str(e)}"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        REQUIRED_COLUMNS = [
+            "Name",
+            "Email",
+            "Phone",
+            "Total Experience",
+            "Current Salary",
+            "Highest Qualification",
+            "University",
+            "Organisation",
+
+        ]
+
+        csv_columns = set(rows[0].keys()) if rows else set()
+
+        missing_cols = [col for col in REQUIRED_COLUMNS if col not in csv_columns]
+
+        if missing_cols:
+            return Response({
+                "error": "Missing required columns in CSV.",
+                "missing_columns": missing_cols
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 
         created = 0
         errors = []
-
         job_cache = {}
-
         batch_objects = []
 
         for idx, row in enumerate(rows, start=2):
+
             try:
-                job_title = (row.get("Job Title") or row.get("job title") or "").strip()
+                job_id = request.data.get("job_id")
 
-                if job_title not in job_cache:
-                    job_cache[job_title] = get_or_create_job_by_title(job_title)
+                if not job_id:
+                    return Response({"error": "job_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-                job_instance = job_cache[job_title]
+                try:
+                    job_instance = add_job.objects.get(pk=job_id)
+                except add_job.DoesNotExist:
+                    return Response({"error": f"Job with id {job_id} does not exist."}, status=status.HTTP_400_BAD_REQUEST)
 
-                education_history = extract_group(
-                    row,
-                    prefix="Education",
-                    fields=["Qualification", "University", "Start_Date", "End_Date", "Score"]
-                )
+                job_title = job_instance.title
 
-                professional_experience = extract_group(
-                    row,
-                    prefix="Experience",
-                    fields=["Role", "Organisation", "Start_Date", "End_Date",
-                            "Location", "CTC_INR", "Responsibilities"]
-                )
-                # submission_json = {
-                #     k: v for k, v in row.items()
-                #     if k.lower() != "job title"
-                # }
+                university = row.get("University", "")
+                highest_qualification = row.get("Highest Qualification", "")
+
+                education_history = []
+                if university or highest_qualification:
+                    education_history.append({
+                        "Qualification": highest_qualification,
+                        "University": university,
+                        "Start_Date": "",
+                        "End_Date": "",
+                        "Score": ""
+                    })
+
+                organisation = row.get("Organisation", "")
+
+                professional_experience = []
+                if organisation:
+                    professional_experience.append({
+                        "Role": "",
+                        "Organisation": organisation,
+                        "Start_Date": "",
+                        "End_Date": "",
+                        "Location": "",
+                        "CTC_INR": "",
+                        "Responsibilities": ""
+                    })
+
                 submission_json = {}
 
                 for k, v in row.items():
+
                     key_lower = k.lower()
-                    if key_lower == "job title":
+
+                    if key_lower in [
+                        # "university".lower(),
+                        # "highest qualification".lower(),
+                        # "organisation".lower(),
+                        "job title"
+                    ]:
                         continue
 
                     if key_lower.startswith("education_"):
                         continue
-
                     if key_lower.startswith("experience_"):
                         continue
 
-                    submission_json[k] = v
+                    if key_lower == "available to join (in days)":
+                        submission_json["Notice_Period"] = clean_value(v)
+                        continue
 
+                    clean_key = k.replace(" ", "_")
 
-                submission_json["status"] = 'Scouting'
+                    # submission_json[clean_key] = v
+                    submission_json[clean_key] = clean_value(v)
 
+                submission_json["status"] = "Scouting"
                 submission_json["State"] = row.get("State", "")
+
                 submission_json["Education_History"] = education_history
                 submission_json["Professional_Experience"] = professional_experience
 
                 submission_json["Role_Type"] = job_title
-                submission_json["job_id"] = job_instance.job_id if job_instance else None
+                submission_json["job_id"] = job_instance.id if job_instance else None
                 submission_json["job_title"] = job_instance.title if job_instance else None
 
                 batch_objects.append(
