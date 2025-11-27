@@ -420,64 +420,83 @@ class FormDataAPIView(APIView):
             # Detect which section to update
             # -----------------------------
             section = request.data.get("section")
-            index = int(request.data.get("index"))
 
             if not section:
                 return Response({"error": "Missing 'section' in body"}, status=400)
 
-            if section == "education":
+            if section == "Education_History":
+                index = int(request.data.get("index"))
                 key_name = "Education_History"
                 allowed_fields = [
                     "Score", "End_Date", "Start_Date", "University",
                     "Qualification", "Specialisation", "Currently_Studying"
                 ]
+                
+                education_list = submission.get(key_name, [])
+                filtered = {k: v for k, v in request.data.items() if k in allowed_fields}
 
-            elif section == "experience":
+                if index == len(education_list):
+                    education_list.append(filtered)
+                elif 0 <= index < len(education_list):
+                    for k, v in filtered.items():
+                        education_list[index][k] = v
+                else:
+                    return Response({"error": "Invalid index"}, status=400)
+
+                submission[key_name] = education_list
+
+            elif section == "Professional_Experience":
+                index = int(request.data.get("index"))
                 key_name = "Professional_Experience"
                 allowed_fields = [
                     "Role", "CTC_INR", "End_Date", "Location",
                     "Is_Current", "Start_Date",
                     "Organisation", "Responsibilities"
                 ]
+                exp_list = submission.get(key_name, [])
+                filtered = {k: v for k, v in request.data.items() if k in allowed_fields}
+
+                if index == len(exp_list):
+                    exp_list.append(filtered)
+                elif 0 <= index < len(exp_list):
+                    for k, v in filtered.items():
+                        exp_list[index][k] = v
+                else:
+                    return Response({"error": "Invalid index"}, status=400)
+
+                submission[key_name] = exp_list
+                
+            elif section == "permanent_address":
+                key_name = "permanent_address"
+
+                allowed_fields = ["state", "country", "location"]
+
+                current_address = submission.get(key_name, {})
+
+                # UPDATE only fields present in request
+                for field in allowed_fields:
+                    if field in request.data:
+                        current_address[field] = request.data[field]
+
+                # Save back
+                submission[key_name] = current_address
             
             else:
                 return Response({"error": "Invalid section"}, status=400)
-
-            # remove "section" from body
-            filtered_data = {
-                k: v for k, v in request.data.items()
-                if k in allowed_fields
-            }
-
-            # Current list
-            data_list = submission.get(key_name, [])
-
-            # ADD NEW
-            if index == len(data_list):
-                data_list.append(filtered_data)
-
-            # UPDATE EXISTING
-            elif 0 <= index < len(data_list):
-                for key, value in filtered_data.items():
-                    data_list[index][key] = value
-            else:
-                return Response({"error": "Invalid index"}, status=400)
-
-            # Save back
-            submission[key_name] = data_list
+            
             form.submission_data = submission
             form.save()
 
             return Response(
-                {"message": f"{section} updated", key_name: data_list},
+                {"message": f"{section} updated", "data": submission},
                 status=200
             )
 
         except FormData.DoesNotExist:
             return Response({"error": "Form not found"}, status=404)
-
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
 
 
 
