@@ -221,7 +221,7 @@ class FormDataAPIView(APIView):
 
         ts = timezone.now().isoformat()
 
-        # If you want to restrict allowed authors, set this list (case-sensitive).
+        # Allowed note authors (None => any author allowed)
         ALLOWED_NOTE_AUTHORS = None
 
         author_name = request.data.get("author")
@@ -274,7 +274,7 @@ class FormDataAPIView(APIView):
                     "data": serializer.data
                 }, status=status.HTTP_200_OK)
 
-            # Disallow changes after Reject/Hired
+            # Disallow any status mutation when current is Reject or Hired
             if old_status == "Reject":
                 return Response({"status": "error", "message": "Cannot change status after rejection."},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -282,7 +282,9 @@ class FormDataAPIView(APIView):
                 return Response({"status": "error", "message": "Candidate already hired. No further changes allowed."},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            # Now process transitions
+            # Allowed statuses set (for reference)
+            # VALID_STATUSES = {"Scouting", "Ongoing", "Reject", "Hired", "Archived"}
+
             # === SCOUTING ===
             if old_status == "Scouting":
                 if new_status == "Reject":
@@ -301,7 +303,6 @@ class FormDataAPIView(APIView):
                     self.send_status_email(candidate_email, candidate_name, "Reject")
 
                 elif new_status == "Ongoing":
-                    # No longer require interview_date/interview_time; accept if present
                     history_entry = {
                         "from": old_status,
                         "to": "Ongoing",
@@ -319,17 +320,55 @@ class FormDataAPIView(APIView):
                     submission_data["status"] = "Ongoing"
                     submission_data["phase"] = phase or "First Round"
 
-                    # send status email (only status + optional phase/date/time)
                     self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
 
+                elif new_status == "Archived":
+                    # Move to Archived — allow only from Scouting
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Archived",
+                        "action": "Archived",
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Archived"
+                    # It's helpful to keep a top-level flag for quick checks
+                    submission_data["archived"] = True
+
+                    # Optional: notify or log
+                    try:
+                        self.send_status_email(candidate_email, candidate_name, "Archived")
+                    except Exception:
+                        # Do not fail the request on email error; transaction will still commit.
+                        pass
+
                 else:
-                    return Response({"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing' or 'Reject'."},
+                    return Response({"status": "error", "message": "Invalid transition from Scouting. Must be 'Ongoing', 'Reject', or 'Archived'."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+            # === ARCHIVED ===
+            elif old_status == "Archived":
+                # Only allowed transition from Archived is to Scouting (unarchive)
+                if new_status == "Scouting":
+                    submission_data.setdefault("status_history", []).append({
+                        "from": old_status,
+                        "to": "Scouting",
+                        "action": "Unarchived",
+                        "updated_at": ts
+                    })
+                    submission_data["status"] = "Scouting"
+                    submission_data["archived"] = False
+
+                    try:
+                        self.send_status_email(candidate_email, candidate_name, "Unarchived")
+                    except Exception:
+                        pass
+                else:
+                    return Response({"status": "error", "message": "Invalid transition from Archived. Only allowed: 'Scouting' (unarchive)."},
                                     status=status.HTTP_400_BAD_REQUEST)
 
             # === ONGOING ===
             elif old_status == "Ongoing":
                 if new_status == "Hired":
-                    # No longer require offer/joining dates; accept if present
                     history_entry = {
                         "from": "Ongoing",
                         "to": "Hired",
@@ -345,13 +384,11 @@ class FormDataAPIView(APIView):
                     submission_data.setdefault("status_history", []).append(history_entry)
                     submission_data["status"] = "Hired"
                     submission_data["phase"] = "Final Selection"
-                    # keep existing or set provided dates
-                    if offer_letter_date:
-                        submission_data["offer_letter_date"] = offer_letter_date
-                    if joining_date:
-                        submission_data["joining_date"] = joining_date
 
-                    self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
+                    try:
+                        self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
+                    except Exception:
+                        pass
 
                 elif new_status == "Reject":
                     if not reject_reason:
@@ -406,6 +443,7 @@ class FormDataAPIView(APIView):
                 "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
+
 
             
     def patch(self, request, form_id, ):
