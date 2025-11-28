@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Skills , Country , State
-from .serializers import  SkillsSerializer , CountryWithStatesSerializer
+from .models import Skills , Country , State,Client
+from .serializers import  SkillsSerializer , CountryWithStatesSerializer,ClientSerializer
 
 from rest_framework.parsers import MultiPartParser
 from .utils.extractors import extract_text_from_pdf, extract_text_from_docx
@@ -155,3 +155,46 @@ class CountryStateListAPI(APIView):
             "status": "success",
             "data": serializer.data
         })
+        
+class ClientListCreateAPIView(APIView):
+
+    # GET → List all clients
+    def get(self, request):
+        clients = Client.objects.all()
+        serializer = ClientSerializer(clients, many=True)
+        return Response({"status": "success", "data": serializer.data}, status=200)
+
+    # POST → Create new client
+    def post(self, request):
+        serializer = ClientSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": "success", "message": "Client created", "data": serializer.data},
+                status=201
+            )
+        return Response({"status": "error", "errors": serializer.errors}, status=400)
+    
+    def put(self, request, pk):
+        try:
+            client = Client.objects.get(id=pk)
+        except Client.DoesNotExist:
+            return Response({"error": "Client not found"}, status=404)
+
+        serializer = ClientSerializer(client, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": "success", "message": "Client updated", "data": serializer.data},
+                status=200
+            )
+        return Response({"errors": serializer.errors}, status=400)
+
+    def delete(self, request, pk):
+        try:
+            client = Client.objects.get(id=pk)
+        except Client.DoesNotExist:
+            return Response({"error": "Client not found"}, status=404)
+
+        client.delete()
+        return Response({"status": "success", "message": "Client deleted"}, status=200)

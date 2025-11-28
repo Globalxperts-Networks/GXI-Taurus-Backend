@@ -204,3 +204,8 @@ class State(models.Model):
         verbose_name = "State"
         verbose_name_plural = "States"
         ordering = ["state_name"]
+        
+class Client(models.Model):
+    name = models.CharField(max_length=255)
+    def __str__(self):
+        return self.name

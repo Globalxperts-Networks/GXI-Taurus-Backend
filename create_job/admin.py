@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django_summernote.admin import SummernoteModelAdmin
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job , Country , State,JobSkillPreference
+from .models import Skills, Department, Job_types, Location, Teams, add_job , Country , State,JobSkillPreference,Client
 from superadmin.models import UserProfile
 
 
@@ -86,3 +86,5 @@ class JobSkillPreferenceAdmin(admin.ModelAdmin):
  
     def skill_name(self, obj):
         return obj.skill.name
+    
+admin.site.register(Client)

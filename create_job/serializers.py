@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Skills, Department, Job_types, Location, Teams, add_job, Question , Country , State,JobSkillPreference
+from .models import Skills, Department, Job_types, Location, Teams, add_job, Question , Country , State,JobSkillPreference,Client
 from superadmin.models import UserProfile  # role constants
 from microsoft_teams.models import TeamsUser
 from microsoft_teams.serializers import TeamsUserSerializer
@@ -277,3 +277,8 @@ class CountryWithStatesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Country
         fields = ['id', 'country_code', 'country_name', 'short_name', 'states'] 
+        
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = "__all__"
