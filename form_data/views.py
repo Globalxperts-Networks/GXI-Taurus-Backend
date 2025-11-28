@@ -222,14 +222,9 @@ class FormDataAPIView(APIView):
         ts = timezone.now().isoformat()
 
         # If you want to restrict allowed authors, set this list (case-sensitive).
-        # Leave as None or empty list to allow any author string.
         ALLOWED_NOTE_AUTHORS = None
-        # Example:
-        # ALLOWED_NOTE_AUTHORS = ["HR", "Manager", "Director"]
 
-        # Read author from request payload (the user asked to send author manually)
         author_name = request.data.get("author")
-        # Normalize empty strings to None
         if isinstance(author_name, str):
             author_name = author_name.strip() or None
 
@@ -248,23 +243,19 @@ class FormDataAPIView(APIView):
             # === NOTES: Always allow adding/updating notes regardless of status ===
             note_was_added = False
             if note is not None:
-                # Require author when sending a note
                 if not author_name:
                     return Response({"status": "error", "message": "Author is required when adding a note."},
                                     status=status.HTTP_400_BAD_REQUEST)
-                # If ALLOWED_NOTE_AUTHORS is provided, validate the author
                 if ALLOWED_NOTE_AUTHORS:
                     if author_name not in ALLOWED_NOTE_AUTHORS:
                         return Response({"status": "error", "message": f"Author must be one of: {', '.join(ALLOWED_NOTE_AUTHORS)}."},
                                         status=status.HTTP_400_BAD_REQUEST)
 
-                # Append a note entry that includes author and timestamp
                 submission_data.setdefault("notes_history", []).append({
                     "note": note,
                     "author": author_name,
                     "updated_at": ts
                 })
-                # Store latest note and author at top level for quick access
                 submission_data["note"] = note
                 submission_data["note_author"] = author_name
                 note_was_added = True
@@ -310,24 +301,25 @@ class FormDataAPIView(APIView):
                     self.send_status_email(candidate_email, candidate_name, "Reject")
 
                 elif new_status == "Ongoing":
-                    if not (interview_date or interview_time):
-                        return Response({"status": "error", "message": "Interview date and/or time required to move to Ongoing."},
-                                        status=status.HTTP_400_BAD_REQUEST)
-                    submission_data.setdefault("status_history", []).append({
+                    # No longer require interview_date/interview_time; accept if present
+                    history_entry = {
                         "from": old_status,
                         "to": "Ongoing",
                         "phase": phase or "First Round",
-                        "interview_date": interview_date,
-                        "interview_time": interview_time,
                         "updated_at": ts
-                    })
-                    submission_data["status"] = "Ongoing"
-                    submission_data["phase"] = phase or "First Round"
+                    }
                     if interview_date:
+                        history_entry["interview_date"] = interview_date
                         submission_data["interview_date"] = interview_date
                     if interview_time:
+                        history_entry["interview_time"] = interview_time
                         submission_data["interview_time"] = interview_time
 
+                    submission_data.setdefault("status_history", []).append(history_entry)
+                    submission_data["status"] = "Ongoing"
+                    submission_data["phase"] = phase or "First Round"
+
+                    # send status email (only status + optional phase/date/time)
                     self.send_status_email(candidate_email, candidate_name, "Ongoing", phase, interview_date, interview_time)
 
                 else:
@@ -337,20 +329,27 @@ class FormDataAPIView(APIView):
             # === ONGOING ===
             elif old_status == "Ongoing":
                 if new_status == "Hired":
-                    if not (offer_letter_date and joining_date):
-                        return Response({"status": "error", "message": "Offer letter date and joining date required to mark as Hired."},
-                                        status=status.HTTP_400_BAD_REQUEST)
-                    submission_data.setdefault("status_history", []).append({
+                    # No longer require offer/joining dates; accept if present
+                    history_entry = {
                         "from": "Ongoing",
                         "to": "Hired",
-                        "offer_letter_date": offer_letter_date,
-                        "joining_date": joining_date,
                         "updated_at": ts
-                    })
+                    }
+                    if offer_letter_date:
+                        history_entry["offer_letter_date"] = offer_letter_date
+                        submission_data["offer_letter_date"] = offer_letter_date
+                    if joining_date:
+                        history_entry["joining_date"] = joining_date
+                        submission_data["joining_date"] = joining_date
+
+                    submission_data.setdefault("status_history", []).append(history_entry)
                     submission_data["status"] = "Hired"
-                    submission_data["offer_letter_date"] = offer_letter_date
-                    submission_data["joining_date"] = joining_date
                     submission_data["phase"] = "Final Selection"
+                    # keep existing or set provided dates
+                    if offer_letter_date:
+                        submission_data["offer_letter_date"] = offer_letter_date
+                    if joining_date:
+                        submission_data["joining_date"] = joining_date
 
                     self.send_status_email(candidate_email, candidate_name, "Hired", "Final Selection", joining_date=joining_date)
 
@@ -370,7 +369,6 @@ class FormDataAPIView(APIView):
                     self.send_status_email(candidate_email, candidate_name, "Reject")
 
                 elif new_status == "Ongoing":
-                    # Update schedule/phase while keeping status the same
                     history_entry = {
                         "from": "Ongoing",
                         "to": "Ongoing",
@@ -408,6 +406,7 @@ class FormDataAPIView(APIView):
                 "message": f"Status updated successfully (current: {submission_data.get('status')}, phase: {submission_data.get('phase')})",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
+
             
     def patch(self, request, form_id, ):
         try:
