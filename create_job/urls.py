@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SkillsAPIView, JobQuestionsAPIView, ResumeParserView, ResumeAIParserView , CountryStateListAPI
+from .views import SkillsAPIView, JobQuestionsAPIView, ResumeParserView, ResumeAIParserView , CountryStateListAPI,ClientListCreateAPIView
 from .departmentviews import DepartmentAPIView
 from .jobtypesviews import jobtypesAPIView
 from .locationViews import LocationAPIView
@@ -31,7 +31,7 @@ urlpatterns = [
     path("resume-ai-parse/", ResumeAIParserView.as_view()),
     path('public/jobs/', PublicJobAPIView.as_view()),          # List jobs (no auth)
     path('public/jobs/<int:pk>/', PublicJobAPIView.as_view()),  # Job detail (no auth)
-    path("country-states/", CountryStateListAPI.as_view())
-
+    path("country-states/", CountryStateListAPI.as_view()),
+    path("client/", ClientListCreateAPIView.as_view()),
 
 ]
