@@ -77,4 +77,12 @@ admin.site.register(Job_types)
 admin.site.register(Location)
 admin.site.register(Country)
 admin.site.register(State)
-admin.site.register(JobSkillPreference)
+
+@admin.register(JobSkillPreference)
+class JobSkillPreferenceAdmin(admin.ModelAdmin):
+    list_display = ("job_title", "skill_name", "must", "good", "rating")
+    def job_title(self, obj):
+        return obj.job.title
+ 
+    def skill_name(self, obj):
+        return obj.skill.name

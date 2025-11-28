@@ -416,13 +416,22 @@ class FormDataAPIView(APIView):
 
             submission = form.submission_data
 
-            # -----------------------------
-            # Detect which section to update
-            # -----------------------------
+            if "section" not in request.data:
+ 
+                allowed_fields = ["State", "Country", "Location",]
+ 
+                for key in allowed_fields:
+                    if key in request.data:
+                        submission[key] = request.data[key]
+ 
+                form.submission_data = submission
+                form.save()
+ 
+                return Response(
+                    {"message": "Top-level fields updated", "data": submission},
+                    status=200
+                )
             section = request.data.get("section")
-
-            if not section:
-                return Response({"error": "Missing 'section' in body"}, status=400)
 
             if section == "Education_History":
                 index = int(request.data.get("index"))
@@ -887,6 +896,7 @@ class UploadCandidatesCSVAPIView(APIView):
             "Highest Qualification",
             "University",
             "Organisation",
+            "Available To Join (in days)"
 
         ]
 
@@ -969,6 +979,13 @@ class UploadCandidatesCSVAPIView(APIView):
 
                     if key_lower == "available to join (in days)":
                         submission_json["Notice_Period"] = clean_value(v)
+                        continue
+
+                    if key_lower == "current location":
+                        submission_json["Location"] = clean_value(v)
+                        continue
+                    if key_lower == "nationality":
+                        submission_json["Country"] = clean_value(v)
                         continue
 
                     clean_key = k.replace(" ", "_")
